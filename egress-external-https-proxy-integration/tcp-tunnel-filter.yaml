@@ -1,0 +1,91 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: egress-gateway-external-proxy-tunnel
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      app: istio-egressgateway
+  configPatches:
+  - applyTo: LISTENER
+    match:
+      context: GATEWAY
+    patch:
+      operation: ADD
+      value:
+        name: "0.0.0.0_8443"
+        address:
+          socket_address:
+            address: 0.0.0.0
+            port_value: 8443
+        filter_chains:
+        - filter_chain_match:
+            server_names:
+            - "www.google.com"
+          filters:
+          - name: envoy.filters.network.tcp_proxy
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+              stat_prefix: "outbound|8443||www.google.com"
+              cluster: external_proxy_cluster
+              tunneling_config:
+                hostname: www.google.com:443
+        - filter_chain_match:
+            server_names:
+            - "www.wikipedia.org"
+          filters:
+          - name: envoy.filters.network.tcp_proxy
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+              stat_prefix: "outbound|8443||www.wikipedia.org"
+              cluster: external_proxy_cluster
+              tunneling_config:
+                hostname: www.wikipedia.org:443
+        listener_filters:
+        - name: envoy.filters.listener.tls_inspector
+          typed_config:
+            "@type": "type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector"
+  # - applyTo: FILTER_CHAIN
+  #   match:
+  #     context: GATEWAY
+  #     listener:
+  #       name: "0.0.0.0_8443"
+  #       portNumber: 8443
+  #   patch:
+  #     operation: ADD
+  #     value:
+  #       filter_chain_match:
+  #         server_names:
+  #         - "www.wikipedia.org"
+  #       filters:
+  #       - name: envoy.filters.network.tcp_proxy
+  #         typed_config:
+  #           "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+  #           stat_prefix: "outbound|8443||www.wikipedia.org"
+  #           cluster: external_proxy_cluster
+  #           tunneling_config:
+  #             hostname: www.wikipedia.org:443
+  - applyTo: CLUSTER
+    match:
+      context: GATEWAY
+    patch:
+      operation: ADD
+      value:
+        name: external_proxy_cluster
+        connect_timeout: 0.25s
+        type: STRICT_DNS
+        lb_policy: ROUND_ROBIN
+        load_assignment:
+          cluster_name: proxy_cluster
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 192.168.56.10
+                    port_value: 3128
+        transport_socket:
+          name: envoy.transport_sockets.tls
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext

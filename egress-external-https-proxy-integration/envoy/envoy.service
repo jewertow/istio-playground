@@ -1,0 +1,11 @@
+[Unit]
+Description=Envoy forward proxy
+
+[Service]
+ExecStart=/usr/local/bin/envoy -c /etc/envoy/envoy.yaml
+Restart=always
+RestartSec=5
+SyslogIdentifier=envoy
+
+[Install]
+WantedBy=multi-user.target

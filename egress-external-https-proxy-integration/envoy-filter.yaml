@@ -1,0 +1,58 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: egress-gateway-external-proxy-tunnel
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      app: istio-egressgateway
+  configPatches:
+  - applyTo: NETWORK_FILTER
+    match:
+      context: GATEWAY
+      listener:
+        portNumber: 8443
+        filterChain:
+          sni: "www.google.com"
+          filter:
+            name: "envoy.filters.network.tcp_proxy"
+    patch:
+      operation: REPLACE
+      value:
+        name: tcp
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          access_log:
+          - name: envoy.access_loggers.file
+            typed_config:
+              "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog"
+              path: /dev/stdout
+              format: "[%START_TIME%] %DOWNSTREAM_REMOTE_ADDRESS% \"%REQ(:METHOD)% %UPSTREAM_HOST% [SNI: %REQUESTED_SERVER_NAME%] %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%\" - %RESPONSE_CODE% - %RESPONSE_FLAGS% \n"
+          cluster: external_proxy_cluster
+          stat_prefix: external_proxy
+          tunneling_config:
+            hostname: www.google.com:443
+  - applyTo: CLUSTER
+    match:
+      context: GATEWAY
+    patch:
+      operation: ADD
+      value:
+        name: external_proxy_cluster
+        connect_timeout: 0.25s
+        type: STRICT_DNS
+        lb_policy: ROUND_ROBIN
+        load_assignment:
+          cluster_name: proxy_cluster
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 192.168.56.10
+                    port_value: 3128
+        transport_socket:
+          name: envoy.transport_sockets.tls
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext

@@ -1,0 +1,63 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+PROXY_IP = "192.168.56.10"
+K8S_IP   = "192.168.56.20"
+
+Vagrant.configure("2") do |config|
+
+  config.vm.define "k8s" do |node|
+    node.vm.provider :virtualbox do |vb|
+      vb.memory = 4096
+      vb.cpus = 2
+    end
+
+    node.vm.box = "ubuntu/bionic64"
+    node.vm.hostname = "k8s"
+    node.vm.network :private_network, ip: K8S_IP
+    node.vm.network :forwarded_port, guest: 6443, host: 6443
+
+    node.vm.provision :file, source: "./k0s", destination: "/home/vagrant/k0s"
+    node.vm.provision :shell, inline: <<-SHELL
+      # install k0s
+      sudo mv /home/vagrant/k0s /usr/local/bin/k0s
+      sudo k0s install controller --single
+      sudo k0s start
+    SHELL
+  end
+
+  config.vm.define "external-proxy" do |node|
+    node.vm.provider :virtualbox do |vb|
+      vb.memory = 512
+      vb.cpus = 1
+    end
+
+    node.vm.box = "ubuntu/bionic64"
+    node.vm.hostname = "external-proxy"
+    node.vm.network :private_network, ip: PROXY_IP
+
+    node.vm.provision :file, source: "envoy/envoy", destination: "/home/vagrant/envoy"
+    node.vm.provision :file, source: "envoy/envoy.yaml", destination: "/home/vagrant/envoy.yaml"
+    node.vm.provision :file, source: "envoy/envoy.service", destination: "/home/vagrant/envoy.service"
+    node.vm.provision :file, source: "envoy/envoy-cert.pem", destination: "/home/vagrant/envoy-cert.pem"
+    node.vm.provision :file, source: "envoy/envoy-key.pem", destination: "/home/vagrant/envoy-key.pem"
+
+    node.vm.provision :shell, inline: <<-SHELL
+      # configure TLS key and certificate
+      mkdir -p /etc/pki/tls/certs
+      mkdir /etc/pki/tls/private
+      mv /home/vagrant/envoy-cert.pem /etc/pki/tls/certs/envoy-cert.pem
+      mv /home/vagrant/envoy-key.pem  /etc/pki/tls/private/envoy-key.pem
+
+      # configure Envoy as a systemd service
+      mv /home/vagrant/envoy /usr/local/bin
+      mkdir /etc/envoy
+      mv /home/vagrant/envoy.yaml /etc/envoy
+      mkdir /var/log/envoy
+      mv /home/vagrant/envoy.service /etc/systemd/system
+      systemctl enable envoy.service
+      systemctl start envoy.service
+    SHELL
+  end
+
+end

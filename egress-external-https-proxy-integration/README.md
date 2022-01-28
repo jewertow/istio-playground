@@ -37,12 +37,26 @@ istioctl install -y \
     --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY
 ```
 
-4. Apply the following resources
+4. Display proxy access log
+```sh
+vagrant ssh external-proxy -c 'tail -f /var/log/envoy/access.log'
+```
+
+5. Deploy a client app, egress gateway and configure traffic
 ```sh
 kubectl label namespace default istio-injection=enabled
+# samples from https://github.com/istio/istio/tree/master/samples
 kubectl apply -f samples/sleep/sleep.yaml
-kubectl apply -f google-external-service-entry.yaml
+kubectl apply -f istio/external-services.yaml
 kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- curl -v -sSL -o /dev/null -D - https://www.google.com
-kubectl apply -f envoy-filter.yaml
+kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- curl -v -sSL -o /dev/null -D - https://www.wikipedia.org
+# check external proxy access log - it should be empty
+kubectl apply -f istio/external-outbound-traffic-through-egress-gateway.yaml
+kubectl apply -f istio/create-custom-listener/tcp-tunnel-filter.yaml
+# now traffic should be routed via external proxy
 kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- curl -v -sSL -o /dev/null -D - https://www.google.com
+kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- curl -v -sSL -o /dev/null -D - https://www.wikipedia.org
+# check external proxy access log once again - there should be similar logs
+[2022-01-28T13:23:03.527Z] 192.168.56.20:47191 "CONNECT 216.58.209.4:443 - HTTP/1.1" - 200 - DC
+[2022-01-28T13:23:30.407Z] 192.168.56.20:59205 "CONNECT 91.198.174.192:443 - HTTP/1.1" - 200 - DC
 ```

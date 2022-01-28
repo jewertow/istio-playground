@@ -1,0 +1,25 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: google-ext
+spec:
+  hosts:
+  - www.google.com
+  ports:
+  - number: 443
+    name: tls
+    protocol: TLS
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: wikipedia-ext
+spec:
+  hosts:
+  - www.wikipedia.org
+  ports:
+  - number: 443
+    name: tls
+    protocol: TLS
+  resolution: DNS

@@ -14,13 +14,13 @@ spec:
       listener:
         portNumber: 8443
         filterChain:
-          sni: "www.google.com"
+          sni: www.google.com
           filter:
-            name: "envoy.filters.network.tcp_proxy"
+            name: envoy.filters.network.tcp_proxy
     patch:
       operation: REPLACE
       value:
-        name: tcp
+        name: envoy.filters.network.tcp_proxy
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           access_log:

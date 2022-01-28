@@ -1,4 +1,6 @@
-## Integration of Istio egress gateway with external HTTPS proxy
+## Proof of concept of tunneling outgoing traffic by Istio egress gateway via external HTTPS proxy
+
+![tunneling-traffic](docs/solution.jpg)
 
 ### Requirements
 
@@ -8,9 +10,7 @@
 ```
 
 #### Istio
-```sh
-# TODO
-```
+Follow the instructions from the official documentation: https://istio.io/latest/docs/setup/getting-started/#download.
 
 #### Kubernetes
 ```sh

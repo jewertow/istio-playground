@@ -60,3 +60,16 @@ kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.nam
 [2022-01-28T13:23:03.527Z] 192.168.56.20:47191 "CONNECT 216.58.209.4:443 - HTTP/1.1" - 200 - DC
 [2022-01-28T13:23:30.407Z] 192.168.56.20:59205 "CONNECT 91.198.174.192:443 - HTTP/1.1" - 200 - DC
 ```
+
+#### TODO
+1. Investigate why istiod logs conflict after applying of VirtualService
+```
+2022-01-28T13:27:02.527694Z	info	ads	Push Status: {
+    "pilot_conflict_outbound_listener_tcp_over_current_tcp": {
+        "0.0.0.0:443": {
+            "proxy": "sleep-698cfc4445-5f4w2.default",
+            "message": "Listener=0.0.0.0:443 AcceptedTCP=www.google.com RejectedTCP=www.wikipedia.org TCPServices=1"
+        }
+    }
+}
+```

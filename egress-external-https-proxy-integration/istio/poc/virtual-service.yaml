@@ -31,7 +31,7 @@ spec:
     route:
     - destination:
         host: external-forward-proxy.default.svc.cluster.local
-        subset: tunnel-google
+        # subset: tunnel-google
         port:
           number: 3128
   - match:
@@ -43,6 +43,6 @@ spec:
     route:
     - destination:
         host: external-forward-proxy.default.svc.cluster.local
-        subset: tunnel-wikipedia
+        # subset: tunnel-wikipedia
         port:
           number: 3128

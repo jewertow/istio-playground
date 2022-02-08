@@ -1,8 +1,9 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-PROXY_IP = "192.168.56.10"
-K8S_IP   = "192.168.56.20"
+PROXY_IP   = "192.168.56.10"
+K8S_IP     = "192.168.56.20"
+EXT_APP_IP = "192.168.56.30"
 
 Vagrant.configure("2") do |config|
 
@@ -57,6 +58,42 @@ Vagrant.configure("2") do |config|
       mv /home/vagrant/envoy.service /etc/systemd/system
       systemctl enable envoy.service
       systemctl start envoy.service
+    SHELL
+  end
+
+  config.vm.define "external-app" do |node|
+    node.vm.provider :virtualbox do |vb|
+      vb.memory = 512
+      vb.cpus = 1
+    end
+
+    node.vm.box = "ubuntu/bionic64"
+    node.vm.hostname = "external-app"
+    node.vm.network :private_network, ip: EXT_APP_IP
+
+    # SSL certificates
+    node.vm.provision :file, source: "ssl-certificates/external-app.corp.net.crt", destination: "/home/vagrant/external-app.corp.net.crt"
+    node.vm.provision :file, source: "ssl-certificates/external-app.corp.net.key", destination: "/home/vagrant/external-app.corp.net.key"
+    node.vm.provision :file, source: "ssl-certificates/ca.corp.net.crt",           destination: "/home/vagrant/ca.corp.net.crt"
+
+    # nginx
+    node.vm.provision :file, source: "external-app/external-app.corp.net.conf", destination: "/home/vagrant/external-app.corp.net.conf"
+
+    node.vm.provision :shell, inline: <<-SHELL
+      # configure TLS key and certificate
+      mkdir -p /etc/pki/tls/certs
+      mkdir /etc/pki/tls/private
+      mkdir /etc/pki/tls/ca-trust
+      mv /home/vagrant/external-app.corp.net.crt /etc/pki/tls/certs/external-app.corp.net.crt
+      mv /home/vagrant/external-app.corp.net.key /etc/pki/tls/private/external-app.corp.net.key
+      mv /home/vagrant/ca.corp.net.crt /etc/pki/tls/ca-trust/ca.corp.net.crt
+
+      # install nginx
+      apt-get update -y
+      apt-get install -y nginx
+      mv /home/vagrant/external-app.corp.net.conf /etc/nginx/nginx.conf
+      systemctl enable nginx
+      systemctl start nginx
     SHELL
   end
 

@@ -1,30 +1,10 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: external-app
-spec:
-  clusterIP: None
-  ports:
-  - protocol: TCP
-    port: 443
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: external-app
-subsets:
-  - addresses:
-    - ip: 192.168.56.30
-    ports:
-    - port: 443
----
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
   name: external-app
 spec:
   hosts:
-  - external-app.default.svc.cluster.local
+  - external-app.corp.net
   ports:
   - number: 443
     name: tls

@@ -1,0 +1,4 @@
+zone "corp.net" {
+        type master;
+        file "/etc/bind/db.corp.net";
+};

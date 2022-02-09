@@ -1,11 +1,34 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-PROXY_IP   = "192.168.56.10"
-K8S_IP     = "192.168.56.20"
-EXT_APP_IP = "192.168.56.30"
+PROXY_IP       = "192.168.56.10"
+K8S_IP         = "192.168.56.20"
+EXT_APP_IP     = "192.168.56.30"
+PRIVATE_DNS_IP = "192.168.56.53"
 
 Vagrant.configure("2") do |config|
+
+  config.vm.define "dns" do |node|
+    node.vm.provider :virtualbox do |vb|
+      vb.memory = 512
+      vb.cpus = 1
+    end
+
+    node.vm.box = "ubuntu/bionic64"
+    node.vm.hostname = "ns.corp.net"
+    node.vm.network :private_network, ip: PRIVATE_DNS_IP
+
+    node.vm.provision :file, source: "infra/dns/db.corp.net",      destination: "/home/vagrant/db.corp.net"
+    node.vm.provision :file, source: "infra/dns/named.conf.local", destination: "/home/vagrant/named.conf.local"
+    node.vm.provision :shell, inline: <<-SHELL
+      # install bind
+      sudo apt-get update -y
+      sudo apt-get install -y bind9 bind9utils bind9-doc
+      sudo mv /home/vagrant/db.corp.net /etc/bind/db.corp.net
+      sudo mv /home/vagrant/named.conf.local /etc/bind/named.conf.local
+      sudo systemctl restart bind9
+    SHELL
+  end
 
   config.vm.define "k8s" do |node|
     node.vm.provider :virtualbox do |vb|
@@ -19,6 +42,7 @@ Vagrant.configure("2") do |config|
     node.vm.network :forwarded_port, guest: 6443, host: 6443
 
     node.vm.provision :file, source: "./k0s", destination: "/home/vagrant/k0s"
+    node.vm.provision :shell, path: "infra/dns/configure-private-dns.sh", env: { "PRIVATE_DNS_IP" => PRIVATE_DNS_IP }
     node.vm.provision :shell, inline: <<-SHELL
       # install k0s
       sudo mv /home/vagrant/k0s /usr/local/bin/k0s

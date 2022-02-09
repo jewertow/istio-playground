@@ -73,12 +73,14 @@ vagrant ssh external-app -c 'sudo tail -f /var/log/nginx/access.log'
 kubectl label namespace default istio-injection=enabled
 ./client/ssl-configmap.sh "$(pwd)/ssl-certificates"
 kubectl apply -f client/sleep.yaml
+
 kubectl apply -f external-app/service-entry.yaml
+
 kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- \
     curl -v --insecure \
     --cert /etc/pki/tls/certs/client-crt.pem \
     --key /etc/pki/tls/private/client-key.pem \
-    https://external-app.default.svc.cluster.local
+    https://external-app.corp.net
 
 # check external proxy access log - it should be empty
 # kubectl apply -f istio/external-outbound-traffic-through-egress-gateway.yaml

@@ -1,0 +1,37 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 443
+      name: tls
+      protocol: TLS
+    hosts:
+    - external-app.corp.net
+    tls:
+      mode: ISTIO_MUTUAL
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-istio-mtls
+spec:
+  host: istio-egressgateway.istio-system.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    portLevelSettings:
+    - port:
+        number: 443
+      tls:
+        mode: ISTIO_MUTUAL
+        sni: external-app.corp.net
+    - port:
+        number: 80
+      tls:
+        mode: ISTIO_MUTUAL
+        sni: external-app.corp.net

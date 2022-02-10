@@ -71,11 +71,12 @@ vagrant ssh external-app -c 'sudo tail -f /var/log/nginx/access.log'
 2. Deploy client and test connection:
 ```sh
 kubectl label namespace default istio-injection=enabled
-./client/ssl-configmap.sh "$(pwd)/ssl-certificates"
-kubectl apply -f client/sleep.yaml
+./service-mesh/client/ssl-configmap.sh "$(pwd)/ssl-certificates"
+kubectl apply -f service-mesh/client/sleep.yaml
+kubectl apply -f service-mesh/external-app/service-entry.yaml
+```
 
-kubectl apply -f external-app/service-entry.yaml
-
+3. Test manual mTLS
 kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- \
     curl -v --insecure \
     --cert /etc/pki/tls/certs/client-crt.pem \

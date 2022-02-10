@@ -1,0 +1,17 @@
+# TODO: Investigate why TLS handshake fails
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: originate-mtls-for-external-app
+spec:
+  host: external-app.corp.net
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    portLevelSettings:
+    - port:
+        number: 443
+      tls:
+        mode: MUTUAL
+        credentialName: client-credential
+        sni: external-app.corp.net

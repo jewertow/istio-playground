@@ -1,0 +1,53 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: external-app-mesh-routing
+spec:
+  hosts:
+  - external-app.corp.net
+  gateways:
+  - mesh
+  tls:
+  - match:
+    - gateways:
+      - mesh
+      port: 443
+      sniHosts:
+      - external-app.corp.net
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        port:
+          number: 443
+  http:
+  - match:
+    - gateways:
+      - mesh
+      port: 80
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        port:
+          number: 443
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: external-app-gateway-routing
+spec:
+  hosts:
+  - external-app.corp.net
+  gateways:
+  - istio-egressgateway
+  tcp:
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 443
+      # sniHosts:
+      # - external-app.corp.net
+    route:
+    - destination:
+        host: external-app.corp.net
+        port:
+          number: 443

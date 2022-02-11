@@ -1,0 +1,37 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: example-com-routing
+spec:
+  hosts:
+  - www.example.com
+  gateways:
+  - mesh
+  - istio-egressgateway
+  # routing rule for client
+  tls:
+  - match:
+    - gateways:
+      - mesh
+      port: 443
+      sniHosts:
+      - www.example.com
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        port:
+          number: 443
+  # routing rule for egress gateway
+  # this routing rule will not be matched with TLS listener in the gateway
+  tls:
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 443
+      sniHosts:
+      - www.example.com
+    route:
+    - destination:
+        host: www.example.com
+        port:
+          number: 443

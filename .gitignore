@@ -2,6 +2,7 @@
 **/*.log
 **/k0s
 **/envoy
+**/*.tar
 
 **/*.crt
 **/*.csr

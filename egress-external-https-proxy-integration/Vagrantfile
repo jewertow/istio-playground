@@ -51,6 +51,7 @@ Vagrant.configure("2") do |config|
     SHELL
   end
 
+  # TODO: configure private DNS
   config.vm.define "external-proxy" do |node|
     node.vm.provider :virtualbox do |vb|
       vb.memory = 512

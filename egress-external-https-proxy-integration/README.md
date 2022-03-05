@@ -82,7 +82,7 @@ kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.nam
     --cert /etc/pki/tls/certs/client-crt.pem \
     --key /etc/pki/tls/private/client-key.pem \
     https://external-app.corp.net
-
+```
 # check external proxy access log - it should be empty
 # kubectl apply -f istio/external-outbound-traffic-through-egress-gateway.yaml
 # kubectl apply -f istio/create-custom-listener/tcp-tunnel-filter.yaml

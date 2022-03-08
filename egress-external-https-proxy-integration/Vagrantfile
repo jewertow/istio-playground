@@ -1,8 +1,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-PROXY_IP       = "192.168.56.10"
-K8S_IP         = "192.168.56.20"
+K8S_IP         = "192.168.56.10"
+PROXY_IP       = "192.168.56.20"
 EXT_APP_IP     = "192.168.56.30"
 PRIVATE_DNS_IP = "192.168.56.53"
 
@@ -12,6 +12,8 @@ Vagrant.configure("2") do |config|
     node.vm.provider :virtualbox do |vb|
       vb.memory = 512
       vb.cpus = 1
+      vb.customize ["modifyvm", :id, "--nictrace1", "on"]
+      vb.customize ["modifyvm", :id, "--nictracefile1", "dns.pcap"]
     end
 
     node.vm.box = "ubuntu/bionic64"
@@ -34,6 +36,8 @@ Vagrant.configure("2") do |config|
     node.vm.provider :virtualbox do |vb|
       vb.memory = 4096
       vb.cpus = 2
+      vb.customize ["modifyvm", :id, "--nictrace1", "on"]
+      vb.customize ["modifyvm", :id, "--nictracefile1", "k8s.pcap"]
     end
 
     node.vm.box = "ubuntu/bionic64"
@@ -51,11 +55,12 @@ Vagrant.configure("2") do |config|
     SHELL
   end
 
-  # TODO: configure private DNS
   config.vm.define "external-proxy" do |node|
     node.vm.provider :virtualbox do |vb|
       vb.memory = 512
       vb.cpus = 1
+      vb.customize ["modifyvm", :id, "--nictrace1", "on"]
+      vb.customize ["modifyvm", :id, "--nictracefile1", "proxy.pcap"]
     end
 
     node.vm.box = "ubuntu/bionic64"
@@ -68,6 +73,7 @@ Vagrant.configure("2") do |config|
     node.vm.provision :file, source: "infra/forward-proxy/envoy-cert.pem", destination: "/home/vagrant/envoy-cert.pem"
     node.vm.provision :file, source: "infra/forward-proxy/envoy-key.pem",  destination: "/home/vagrant/envoy-key.pem"
 
+    node.vm.provision :shell, path: "infra/common/configure-private-dns.sh", env: { "PRIVATE_DNS_IP" => PRIVATE_DNS_IP }
     node.vm.provision :shell, inline: <<-SHELL
       # configure TLS key and certificate
       mkdir -p /etc/pki/tls/certs
@@ -90,6 +96,8 @@ Vagrant.configure("2") do |config|
     node.vm.provider :virtualbox do |vb|
       vb.memory = 512
       vb.cpus = 1
+      vb.customize ["modifyvm", :id, "--nictrace1", "on"]
+      vb.customize ["modifyvm", :id, "--nictracefile1", "app.pcap"]
     end
 
     node.vm.box = "ubuntu/bionic64"
@@ -118,7 +126,7 @@ Vagrant.configure("2") do |config|
       apt-get install -y nginx
       mv /home/vagrant/nginx.conf /etc/nginx/nginx.conf
       systemctl enable nginx
-      systemctl start nginx
+      systemctl restart nginx
     SHELL
   end
 

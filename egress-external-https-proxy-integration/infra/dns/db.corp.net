@@ -12,5 +12,5 @@ $TTL    604800
 @       IN      NS      ns.corp.net.
 ns      IN      A       192.168.56.53
 
-external-app            IN      A       192.168.56.30
 external-forward-proxy  IN      A       192.168.56.20
+external-app            IN      A       192.168.56.30

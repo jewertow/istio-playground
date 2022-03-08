@@ -1,7 +1,8 @@
 **/.vagrant
-**/*.log
 **/k0s
 **/envoy
+**/*.log
+**/*.pcap
 **/*.tar
 
 **/*.crt

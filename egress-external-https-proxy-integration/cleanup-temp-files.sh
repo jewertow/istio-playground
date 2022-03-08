@@ -1,4 +1,6 @@
 #!/bin/bash
 
-rm -f ./*.tar
-rm -f ./*.log
+for file_ext in "tar" "log" "pcap"
+do
+  find . -name "*.$file_ext" -type f | xargs rm -f
+done

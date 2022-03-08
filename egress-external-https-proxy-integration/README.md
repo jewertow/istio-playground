@@ -71,9 +71,9 @@ vagrant ssh external-app -c 'sudo tail -f /var/log/nginx/access.log'
 2. Deploy client and test connection:
 ```sh
 kubectl label namespace default istio-injection=enabled
-./service-mesh/client/ssl-configmap.sh "$(pwd)/ssl-certificates"
-kubectl apply -f service-mesh/client/sleep.yaml
-kubectl apply -f service-mesh/external-app/service-entry.yaml
+./service-mesh/ssl-configmap.sh "$(pwd)/ssl-certificates"
+kubectl apply -f service-mesh/sleep.yaml
+kubectl apply -f service-mesh/service-entries.yaml
 ```
 
 3. Test manual mTLS

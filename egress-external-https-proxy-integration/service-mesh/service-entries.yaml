@@ -1,0 +1,36 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: external-forward-proxy
+spec:
+  hosts:
+  - external-forward-proxy.corp.net
+  location: MESH_EXTERNAL
+  ports:
+  - number: 3080
+    name: http
+    protocol: HTTP
+  - number: 3443
+    name: https
+    protocol: HTTPS
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: external-app
+spec:
+  hosts:
+  - external-app.corp.net
+  location: MESH_EXTERNAL
+  ports:
+  - number: 80
+    name: tcp
+    protocol: TCP
+  - number: 443
+    name: tls
+    protocol: TLS
+  - number: 8443
+    name: mtls
+    protocol: TLS
+  resolution: DNS

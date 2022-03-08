@@ -1,0 +1,22 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: tunnel-via-external-forward-proxy
+spec:
+  host: external-forward-proxy.corp.net
+  trafficPolicy:
+    tunneling:
+      method: CONNECT
+      port: 443
+#---
+# This destination rule cannot be applied
+# for a gateway working in TLS PASSTHROUGH mode.
+#apiVersion: networking.istio.io/v1alpha3
+#kind: DestinationRule
+#metadata:
+#  name: originate-tls
+#spec:
+#  host: external-forward-proxy.corp.net
+#  trafficPolicy:
+#    tls:
+#      mode: SIMPLE

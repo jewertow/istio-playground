@@ -6,13 +6,12 @@ spec:
   selector:
     istio: egressgateway
   servers:
-# TODO:
-#  - port:
-#      number: 80
-#      name: tcp
-#      protocol: TCP
-#    hosts:
-#    - external-app.corp.net
+  - port:
+      number: 80
+      name: tcp
+      protocol: TCP
+    hosts:
+    - external-app.corp.net
   - port:
       number: 443
       name: tls

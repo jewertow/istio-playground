@@ -8,26 +8,25 @@ spec:
   gateways:
   - istio-egressgateway
   - mesh
-# TODO:
-#  tcp:
-#  - match:
-#    - gateways:
-#      - mesh
-#      port: 80
-#    route:
-#    - destination:
-#        host: istio-egressgateway.istio-system.svc.cluster.local
-#        port:
-#          number: 80
-#  - match:
-#    - gateways:
-#      - istio-egressgateway
-#      port: 80
-#    route:
-#    - destination:
-#        host: external-forward-proxy.corp.net
-#        port:
-#          number: 3080
+  tcp:
+  - match:
+    - gateways:
+      - mesh
+      port: 80
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        port:
+          number: 80
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 80
+    route:
+    - destination:
+        host: external-forward-proxy.corp.net
+        port:
+          number: 3080
   tls:
   - match:
     - gateways:

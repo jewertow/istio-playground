@@ -6,5 +6,4 @@ spec:
   host: external-forward-proxy.corp.net
   trafficPolicy:
     tunneling:
-      method: CONNECT
-      port: 443
+      destinationPort: 443

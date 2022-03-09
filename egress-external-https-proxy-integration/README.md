@@ -76,12 +76,15 @@ kubectl apply -f service-mesh/sleep.yaml
 kubectl apply -f service-mesh/service-entries.yaml
 ```
 
-3. Test manual mTLS
+3. Test manual mTLS:
+```sh
 kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- \
     curl -v --insecure \
     --cert /etc/pki/tls/certs/client-crt.pem \
     --key /etc/pki/tls/private/client-key.pem \
     https://external-app.corp.net
+```
+
 ```
 # check external proxy access log - it should be empty
 # kubectl apply -f istio/external-outbound-traffic-through-egress-gateway.yaml

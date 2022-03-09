@@ -1,5 +1,10 @@
 #!/bin/bash
-# This script requires to pass variable named PRIVATE_DNS_IP
+
+if [ -z "${PRIVATE_DNS_IP}" ];
+then
+  echo "Script requires an input variable named PRIVATE_DNS_IP."
+  exit 1
+fi
 
 sudo apt-get update -y
 sudo apt-get install -y resolvconf

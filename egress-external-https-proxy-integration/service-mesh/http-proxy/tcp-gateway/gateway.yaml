@@ -7,18 +7,8 @@ spec:
     istio: egressgateway
   servers:
   - port:
-      number: 443
-      name: tls
-      protocol: TLS
-    hosts:
-    - external-app.corp.net
-    tls:
-      mode: PASSTHROUGH
-  - port:
       number: 80
-      name: mtls
-      protocol: TLS
+      name: tcp
+      protocol: TCP
     hosts:
     - external-app.corp.net
-    tls:
-      mode: PASSTHROUGH

@@ -8,14 +8,14 @@ spec:
     labels:
       app: istio-egressgateway
   configPatches:
-    - applyTo: CLUSTER
-      match:
-        context: GATEWAY
-      patch:
-        operation: MERGE
-        value:
-          name: outbound|3443||external-forward-proxy.corp.net
-          transport_socket:
-            name: envoy.transport_sockets.tls
-            typed_config:
-              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+  - applyTo: CLUSTER
+    match:
+      context: GATEWAY
+    patch:
+      operation: MERGE
+      value:
+        name: outbound|3443||external-forward-proxy.corp.net
+        transport_socket:
+          name: envoy.transport_sockets.tls
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext

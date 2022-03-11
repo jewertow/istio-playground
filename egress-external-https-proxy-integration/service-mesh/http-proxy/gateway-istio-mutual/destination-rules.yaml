@@ -33,3 +33,8 @@ spec:
         tls:
           mode: ISTIO_MUTUAL
           sni: external-app.corp.net
+      - port:
+          number: 443
+        tls:
+          mode: ISTIO_MUTUAL
+          sni: external-app.corp.net

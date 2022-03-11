@@ -12,28 +12,18 @@ kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.nam
     curl -v http://external-app.corp.net
 ```
 
-2. TODO: Test TLS connection:
+3. Test TLS connection:
 ```sh
 kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- \
     curl -v --insecure https://external-app.corp.net
 ```
 
-3. TODO: Test mTLS connection:
+4. Test mTLS connection:
 ```sh
+# This requires to apply subset external-app-8443 for external-forward-proxy
 kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- \
     curl -v --insecure \
     --cert /etc/pki/tls/certs/client-crt.pem \
     --key /etc/pki/tls/private/client-key.pem \
-    https://external-app.corp.net:8443
+    https://external-app.corp.net
 ```
-
-6. TODO: Then verify if request was routed via forward proxy:
-```sh
-vagrant ssh external-proxy -c 'tail -f /var/log/envoy/http-access.log'
-# output should be similar to the following logs:
-[2022-03-09T15:06:22.647Z] 192.168.56.10:36748 "CONNECT 192.168.56.30:443 - HTTP/1.1" - 200 - DC
-[2022-03-09T16:43:58.611Z] 192.168.56.10:1346 "CONNECT 192.168.56.30:8443 - HTTP/1.1" - 200 - DC
-```
-
-### TODO
-Test HTTP/2

@@ -8,7 +8,15 @@ spec:
   servers:
   - port:
       number: 80
-      name: mtls
+      name: http
+      protocol: TLS
+    hosts:
+    - external-app.corp.net
+    tls:
+      mode: ISTIO_MUTUAL
+  - port:
+      number: 443
+      name: https
       protocol: TLS
     hosts:
     - external-app.corp.net

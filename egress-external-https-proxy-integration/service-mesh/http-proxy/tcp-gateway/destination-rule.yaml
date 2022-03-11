@@ -4,6 +4,16 @@ metadata:
   name: tunnel-via-external-forward-proxy
 spec:
   host: external-forward-proxy.corp.net
-  trafficPolicy:
-    tunneling:
-      destinationPort: 80
+  subsets:
+  - name: external-app-80
+    trafficPolicy:
+      tunneling:
+        destinationPort: 80
+  - name: external-app-443
+    trafficPolicy:
+      tunneling:
+        destinationPort: 443
+  - name: external-app-8443
+    trafficPolicy:
+      tunneling:
+        destinationPort: 8443

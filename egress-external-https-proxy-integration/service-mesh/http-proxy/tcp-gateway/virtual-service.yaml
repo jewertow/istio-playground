@@ -8,16 +8,29 @@ spec:
   gateways:
   - istio-egressgateway
   - mesh
-  tcp:
+  http:
   - match:
     - gateways:
       - mesh
-      port: 8080
+      port: 80
     route:
     - destination:
         host: istio-egressgateway.istio-system.svc.cluster.local
         port:
           number: 80
+  tls:
+  - match:
+    - gateways:
+      - mesh
+      port: 443
+      sniHosts:
+      - external-app.corp.net
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        port:
+          number: 443
+  tcp:
   - match:
     - gateways:
       - istio-egressgateway
@@ -25,5 +38,17 @@ spec:
     route:
     - destination:
         host: external-forward-proxy.corp.net
+        subset: external-app-80
+        port:
+          number: 3080
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 443
+    route:
+    - destination:
+        host: external-forward-proxy.corp.net
+        subset: external-app-443
+#        subset: external-app-8443
         port:
           number: 3080

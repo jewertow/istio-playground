@@ -1,4 +1,4 @@
-### TLS PASSTHROUGH Gateway - HTTP forward proxy
+### TLS ISTIO_MUTUAL - HTTP forward proxy
 1. Apply Istio resources:
 ```sh
 kubectl apply -f virtual-service.yaml
@@ -6,13 +6,19 @@ kubectl apply -f destination-rules.yaml
 kubectl apply -f gateway.yaml
 ```
 
-2. Test TLS connection:
+2. Test HTTP request:
+```sh
+kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- \
+    curl -v http://external-app.corp.net
+```
+
+2. TODO: Test TLS connection:
 ```sh
 kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- \
     curl -v --insecure https://external-app.corp.net
 ```
 
-3. Test mTLS connection:
+3. TODO: Test mTLS connection:
 ```sh
 kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- \
     curl -v --insecure \
@@ -21,7 +27,7 @@ kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.nam
     https://external-app.corp.net:8443
 ```
 
-6. Then verify if request was routed via forward proxy:
+6. TODO: Then verify if request was routed via forward proxy:
 ```sh
 vagrant ssh external-proxy -c 'tail -f /var/log/envoy/http-access.log'
 # output should be similar to the following logs:

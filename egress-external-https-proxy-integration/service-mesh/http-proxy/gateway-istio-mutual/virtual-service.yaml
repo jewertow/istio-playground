@@ -1,0 +1,34 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: external-app-via-egress-gateway
+spec:
+  hosts:
+  - external-app.corp.net
+  gateways:
+  - istio-egressgateway
+  - mesh
+  http:
+  - match:
+    - gateways:
+      - mesh
+      port: 80
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        subset: external-app-mtls-gateway
+        port:
+          number: 80
+  tcp:
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 80
+#      sniHosts:
+#      - external-app.corp.net
+    route:
+    - destination:
+        host: external-forward-proxy.corp.net
+        subset: external-app-80
+        port:
+          number: 3080

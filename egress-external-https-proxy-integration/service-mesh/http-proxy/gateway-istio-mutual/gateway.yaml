@@ -1,0 +1,16 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 80
+      name: mtls
+      protocol: TLS
+    hosts:
+    - external-app.corp.net
+    tls:
+      mode: ISTIO_MUTUAL

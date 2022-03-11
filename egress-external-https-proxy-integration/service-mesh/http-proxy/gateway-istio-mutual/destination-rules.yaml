@@ -1,0 +1,35 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: tunnel-via-external-forward-proxy
+spec:
+  host: external-forward-proxy.corp.net
+  subsets:
+  - name: external-app-80
+    trafficPolicy:
+      tunneling:
+        destinationPort: 80
+  - name: external-app-443
+    trafficPolicy:
+      tunneling:
+        destinationPort: 443
+  - name: external-app-8443
+    trafficPolicy:
+      tunneling:
+        destinationPort: 8443
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-for-external-app
+spec:
+  host: istio-egressgateway.istio-system.svc.cluster.local
+  subsets:
+  - name: external-app-mtls-gateway
+    trafficPolicy:
+      portLevelSettings:
+      - port:
+          number: 80
+        tls:
+          mode: ISTIO_MUTUAL
+          sni: external-app.corp.net

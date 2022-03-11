@@ -1,4 +1,4 @@
-### TLS pass through Gateway - HTTPS forward proxy
+### TLS PASSTHROUGH Gateway - HTTPS forward proxy
 
 #### Important
 Istio Gateway listening in TLS PASSTHROUGH mode cannot be integrated with external HTTPS proxy,

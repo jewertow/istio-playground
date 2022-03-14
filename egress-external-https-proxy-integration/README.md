@@ -19,18 +19,23 @@ chmod u+x k0s
 ```
 
 ### Setup environment
-1. Run VMs
+1. Generate nginx configurations
+```sh
+(cd infra/external-app; ansible-playbook generate-nginx-configs.yaml)
+```
+
+2. Run VMs
 ```sh
 vagrant up
 ```
 
-2. Configure kube config file
+3. Configure kube config file
 ```sh
 vagrant ssh k8s -c 'sudo cat /var/lib/k0s/pki/admin.conf' > ~/.kube/config-vagrant-k0s
 export KUBECONFIG=~/.kube/config-vagrant-k0s
 ```
 
-3. Install Istio
+4. Install Istio
 ```sh
 istioctl install -y \
     --set profile=demo \
@@ -38,7 +43,7 @@ istioctl install -y \
     --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY
 ```
 
-4. Display proxy access log
+5. Display proxy access log
 ```sh
 vagrant ssh external-proxy -c 'tail -f /var/log/envoy/access.log'
 ```

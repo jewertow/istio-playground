@@ -9,3 +9,5 @@
 **/*.csr
 **/*.key
 
+egress-external-https-proxy-integration/infra/external-app/http.conf
+egress-external-https-proxy-integration/infra/external-app/http2.conf

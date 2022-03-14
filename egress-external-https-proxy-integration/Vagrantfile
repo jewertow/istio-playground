@@ -110,7 +110,8 @@ Vagrant.configure("2") do |config|
     node.vm.provision :file, source: "ssl-certificates/ca.corp.net.crt",           destination: "/home/vagrant/ca.corp.net.crt"
 
     # nginx config
-    node.vm.provision :file, source: "infra/external-app/nginx.conf", destination: "/home/vagrant/nginx.conf"
+    node.vm.provision :file, source: "infra/external-app/http.conf", destination: "/home/vagrant/http.conf"
+    node.vm.provision :file, source: "infra/external-app/http2.conf", destination: "/home/vagrant/http2.conf"
 
     node.vm.provision :shell, inline: <<-SHELL
       # configure TLS key and certificate
@@ -124,7 +125,9 @@ Vagrant.configure("2") do |config|
       # install nginx
       apt-get update -y
       apt-get install -y nginx
-      mv /home/vagrant/nginx.conf /etc/nginx/nginx.conf
+      mv /home/vagrant/http.conf /etc/nginx/http.conf
+      mv /home/vagrant/http2.conf /etc/nginx/http2.conf
+      ln -sfn /etc/nginx/http.conf /etc/nginx/nginx.conf
       systemctl enable nginx
       systemctl restart nginx
     SHELL

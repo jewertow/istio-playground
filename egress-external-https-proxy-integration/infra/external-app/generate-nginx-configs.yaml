@@ -1,0 +1,17 @@
+---
+- name: Generate nginx configuration files
+  gather_facts: false
+  hosts: localhost
+  tasks:
+  - name: Generate nginx HTTP/1.1 configuration
+    template:
+      src: ./nginx.conf.j2
+      dest: ./http.conf
+    vars:
+      http2_enabled: false
+  - name: Generate nginx HTTP/2 configuration
+    template:
+      src: ./nginx.conf.j2
+      dest: ./http2.conf
+    vars:
+      http2_enabled: true

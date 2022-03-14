@@ -8,18 +8,8 @@ spec:
   gateways:
   - istio-egressgateway
   - mesh
-  http:
-  - match:
-    - gateways:
-      - mesh
-      port: 80
-    route:
-    - destination:
-        host: istio-egressgateway.istio-system.svc.cluster.local
-        subset: external-app-mtls-gateway
-        port:
-          number: 80
   tls:
+  # routing for traffic going to HTTPS server on port 443
   - match:
     - gateways:
       - mesh
@@ -29,25 +19,14 @@ spec:
     route:
     - destination:
         host: istio-egressgateway.istio-system.svc.cluster.local
-        subset: external-app-mtls-gateway
         port:
           number: 443
-  # TLS routes are not matched with ISTIO_MUTUAL gateway, so tcp must be used as a workaround
-  tcp:
-  - match:
-    - gateways:
-      - istio-egressgateway
-      port: 80
-    route:
-    - destination:
-        host: external-forward-proxy.corp.net
-        subset: external-app-80
-        port:
-          number: 3080
   - match:
     - gateways:
       - istio-egressgateway
       port: 443
+      sniHosts:
+      - external-app.corp.net
     route:
     - destination:
         host: external-forward-proxy.corp.net

@@ -9,5 +9,5 @@
 **/*.csr
 **/*.key
 
-egress-external-https-proxy-integration/infra/external-app/http.conf
-egress-external-https-proxy-integration/infra/external-app/http2.conf
+tunneling-outbound-traffic/infra/external-app/http.conf
+tunneling-outbound-traffic/infra/external-app/http2.conf

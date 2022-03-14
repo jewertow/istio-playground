@@ -30,6 +30,9 @@ spec:
   - number: 443
     name: tls
     protocol: TLS
+  - number: 8080
+    name: tcp
+    protocol: TCP
   - number: 8443
     name: mtls
     protocol: TLS

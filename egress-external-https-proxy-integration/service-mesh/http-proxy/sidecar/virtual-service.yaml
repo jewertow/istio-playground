@@ -1,0 +1,34 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: external-app-tunneling
+spec:
+  hosts:
+  - external-app.corp.net
+  gateways:
+  - mesh
+  tcp:
+  - match:
+    - gateways:
+      - mesh
+      port: 8080
+    route:
+    - destination:
+        host: external-forward-proxy.corp.net
+        subset: external-app-80
+        port:
+          number: 3080
+  tls:
+  - match:
+    - gateways:
+      - mesh
+      sniHosts:
+      - external-app.corp.net
+      port: 443
+    route:
+    - destination:
+        host: external-forward-proxy.corp.net
+        subset: external-app-443
+#        subset: external-app-8443
+        port:
+          number: 3080

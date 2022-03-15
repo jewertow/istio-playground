@@ -31,7 +31,7 @@ kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.nam
    and tunneled via forward proxy:
 ```sh
 kubectl logs -l istio=egressgateway -n istio-system --tail=2
-vagrant ssh external-proxy -c 'tail -n 3 -f /var/log/envoy/http-access.log'
+vagrant ssh external-proxy -c 'tail -n 2 -f /var/log/envoy/http-access.log'
 ```
 Output should be similar to the following logs:
 ```

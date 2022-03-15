@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: originate-tls-for-external-proxy
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      app: istio-egressgateway
+  configPatches:
+  - applyTo: CLUSTER
+    match:
+      context: GATEWAY
+    patch:
+      operation: MERGE
+      value:
+        name: outbound|3443||external-forward-proxy.corp.net
+        transport_socket:
+          name: envoy.transport_sockets.tls
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext

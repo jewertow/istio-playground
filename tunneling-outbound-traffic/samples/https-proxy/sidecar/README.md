@@ -7,7 +7,6 @@ vagrant ssh external-app -c 'sudo ln -sfn /etc/nginx/http.conf /etc/nginx/nginx.
 
 2. Apply Istio resources:
 ```sh
-kubectl apply -f envoy-filter.yaml
 kubectl apply -f virtual-service.yaml
 ```
 

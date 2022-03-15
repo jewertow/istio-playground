@@ -1,25 +1,5 @@
 ### Tunneling traffic through TLS `PASSTHROUGH` egress gateway
 
-Istio Gateway listening in TLS `PASSTHROUGH` mode cannot be integrated with external HTTPS proxy,
-because TLS origination couldn't be applied to TLS `PASSTHROUGH` listeners.
-On the other hand, it can't work without TLS origination, because TLS `PASSTHROUGH`
-passes an incoming request as is to a destination, so when a request is routed via
-another intermediate proxy, the TLS handshake will always fail.
-
-A workaround is to apply an EnvoyFilter that applies `UpstreamTlsContext` to forward-proxy cluster.
-```json
-{
-   "cluster": {
-      "transport_socket": {
-         "name": "envoy.transport_sockets.tls",
-         "typed_config": {
-            "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext"
-         }
-      }
-   }
-}
-```
-
 1. Configure external-app to listen on HTTP/1.1: (TODO: explain why)
 ```sh
 vagrant ssh external-app -c 'sudo ln -sfn /etc/nginx/http.conf /etc/nginx/nginx.conf; sudo systemctl restart nginx'
@@ -29,7 +9,6 @@ vagrant ssh external-app -c 'sudo ln -sfn /etc/nginx/http.conf /etc/nginx/nginx.
 ```sh
 kubectl apply -f virtual-service.yaml
 kubectl apply -f gateway.yaml
-kubectl apply -f envoy-filter.yaml
 ```
 
 3. Test TLS connection:

@@ -9,7 +9,6 @@ vagrant ssh external-app -c 'sudo ln -sfn /etc/nginx/http2.conf /etc/nginx/nginx
 ```sh
 kubectl apply -f virtual-service.yaml
 kubectl apply -f gateway.yaml
-kubectl apply -f envoy-filter.yaml
 ```
 
 3. Test TCP connection:

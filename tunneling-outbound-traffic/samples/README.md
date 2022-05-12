@@ -7,7 +7,7 @@ kubectl label namespace default istio-injection=enabled
 
 2. Create config maps with SSL keys:
 ```sh
-(cd ssl-certificates; ./generate.sh)
+(cd ../ssl-certificates; ./generate.sh)
 ./ssl-configmap.sh ../ssl-certificates
 ```
 

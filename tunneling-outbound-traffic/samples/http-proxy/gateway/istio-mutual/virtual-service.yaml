@@ -40,18 +40,18 @@ spec:
       port: 80
     route:
     - destination:
-        host: external-forward-proxy.corp.net
-        subset: external-app-80
+        host: external-app.corp.net
+#        subset: external-app-80
         port:
-          number: 3080
+          number: 80
   - match:
     - gateways:
       - istio-egressgateway
       port: 443
     route:
     - destination:
-        host: external-forward-proxy.corp.net
+        host: external-app.corp.net
 #        subset: external-app-443
-        subset: external-app-8443
+#        subset: external-app-8443
         port:
-          number: 3080
+          number: 443

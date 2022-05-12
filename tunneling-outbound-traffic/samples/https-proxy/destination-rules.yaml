@@ -8,7 +8,9 @@ spec:
   - name: external-app-80
     trafficPolicy:
       tunneling:
-        destinationPort: 80
+        protocol: connect
+        targetHost: external-app.corp.net
+        targetPort: 80
       portLevelSettings:
       - port:
           number: 3443
@@ -18,7 +20,9 @@ spec:
   - name: external-app-443
     trafficPolicy:
       tunneling:
-        destinationPort: 443
+        protocol: connect
+        targetHost: external-app.corp.net
+        targetPort: 443
       portLevelSettings:
       - port:
           number: 3443
@@ -28,7 +32,9 @@ spec:
   - name: external-app-8443
     trafficPolicy:
       tunneling:
-        destinationPort: 8443
+        protocol: connect
+        targetHost: external-app.corp.net
+        targetPort: 8443
       portLevelSettings:
       - port:
           number: 3443

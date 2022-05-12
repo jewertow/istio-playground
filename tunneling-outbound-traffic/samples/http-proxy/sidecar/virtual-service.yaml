@@ -28,7 +28,7 @@ spec:
     route:
     - destination:
         host: external-forward-proxy.corp.net
-#        subset: external-app-443
-        subset: external-app-8443
+        subset: external-app-443
+#        subset: external-app-8443
         port:
           number: 3080

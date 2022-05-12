@@ -7,13 +7,19 @@ spec:
   subsets:
   - name: external-app-80
     trafficPolicy:
-      tunneling:
-        destinationPort: 80
+      tunnel:
+        protocol: connect
+        targetHost: external-app.corp.net
+        targetPort: 80
   - name: external-app-443
     trafficPolicy:
-      tunneling:
-        destinationPort: 443
+      tunnel:
+        protocol: connect
+        targetHost: external-app.corp.net
+        targetPort: 443
   - name: external-app-8443
     trafficPolicy:
-      tunneling:
-        destinationPort: 8443
+      tunnel:
+        protocol: connect
+        targetHost: external-app.corp.net
+        targetPort: 8443

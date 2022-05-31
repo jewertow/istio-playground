@@ -10,7 +10,7 @@ Download and build Istio from my fork.
 git clone https://github.com/jewertow/upstream-istio
 cd istio
 export ISTIO_SRC=$(pwd)
-export TAG=tunneling
+export TAG=tunnel-api
 make gen
 make build
 make docker
@@ -58,5 +58,5 @@ $ISTIO_SRC/out/linux_amd64/istioctl install -y \
     --set meshConfig.accessLogFile=/dev/stdout \
     --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY \
     --set hub="localhost:5000" \
-    --set tag="tunneling"
+    --set tag="tunnel-api"
 ```

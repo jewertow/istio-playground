@@ -8,18 +8,18 @@ spec:
   - name: external-app-80
     trafficPolicy:
       tunnel:
-        protocol: connect
+        protocol: CONNECT
         targetHost: external-app.corp.net
         targetPort: 80
   - name: external-app-443
     trafficPolicy:
       tunnel:
-        protocol: connect
+        protocol: CONNECT
         targetHost: external-app.corp.net
         targetPort: 443
   - name: external-app-8443
     trafficPolicy:
       tunnel:
-        protocol: connect
+        protocol: CONNECT
         targetHost: external-app.corp.net
         targetPort: 8443

@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: external-app-ssl-certificate
+data:
+  external-app.external.svc.cluster.local.crt: |-
+    -----BEGIN CERTIFICATE-----
+    MIICxTCCAa0CAQAwDQYJKoZIhvcNAQELBQAwHzEdMBsGA1UEAwwUY2Euc3ZjLmNs
+    dXN0ZXIubG9jYWwwHhcNMjIwNTMxMjAyNDA3WhcNMjMwNTMxMjAyNDA3WjAyMTAw
+    LgYDVQQDDCdleHRlcm5hbC1hcHAuZXh0ZXJuYWwuc3ZjLmNsdXN0ZXIubG9jYWww
+    ggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCgxquZ/jT8t5wO4JbqHJ/5
+    4AVagp0s1IpM1KUrPCDav3Iif6ttcjo4bsUL26/JCCPC4wVYybk2XxWzKvog6fpI
+    wRfMAzM1WK3AghF7zVW/1vPzysW/+xonUGpnk34fokIrc8Sb45FCdmnOn5FG/ySp
+    nmzyJv7+yDg7MNmKwnDJS3sh2UZBEs5qBqPiKN/O1SGwcJKr6C59GPeTZvg4MPgd
+    sa8ByaYOTFdWt1WhL9hZrThfm7JzYGy5OSPUdrDKTPvtWgEuDcKAZ10irmumyy8Z
+    ZTYleNETh+gzuNtIShbfSZ/0wACmDEA11juQerA5omiVfvvxC+uPvK9qK41qrLCz
+    AgMBAAEwDQYJKoZIhvcNAQELBQADggEBAFg5uHtLxZjOder5lMhJlMN/MGHMBFd7
+    /FCG9Vpu7oQfhsqj2q138wQUU5BDN7s16qnopTUtIWch7rgtZezAIu6azBRtIA6y
+    DGd8Udh8A9XmLYDxbOZibY+hW/qQPdKT114MaCXZYDO9LS86P5NQ+HxR2+e+/hwb
+    THdmW3/2AssSw65cU1Evx44pvRppYHW/hj6V8FY4WCUYZfiv4mO/ox1MSqi7NZ8p
+    jjR/Y7HYvgzuAgBKKHFc3N8UlXzp88FxRj2NdbdAJ56kf1ixMg33Q3+k34GrtE9J
+    kRuV/g/SCztAwnxWRYWFhhL9ZGdiv2ljjoDLhhW4NHWvzgD72GjNHjU=
+    -----END CERTIFICATE-----

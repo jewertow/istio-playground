@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: external-app-ssl-private-key
+data:
+  external-app.external.svc.cluster.local.key: |-
+    -----BEGIN PRIVATE KEY-----
+    MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCgxquZ/jT8t5wO
+    4JbqHJ/54AVagp0s1IpM1KUrPCDav3Iif6ttcjo4bsUL26/JCCPC4wVYybk2XxWz
+    Kvog6fpIwRfMAzM1WK3AghF7zVW/1vPzysW/+xonUGpnk34fokIrc8Sb45FCdmnO
+    n5FG/ySpnmzyJv7+yDg7MNmKwnDJS3sh2UZBEs5qBqPiKN/O1SGwcJKr6C59GPeT
+    Zvg4MPgdsa8ByaYOTFdWt1WhL9hZrThfm7JzYGy5OSPUdrDKTPvtWgEuDcKAZ10i
+    rmumyy8ZZTYleNETh+gzuNtIShbfSZ/0wACmDEA11juQerA5omiVfvvxC+uPvK9q
+    K41qrLCzAgMBAAECggEAfIZkEvnZgIOV09AQE3PoVFk2zEuuATL9i1SIOVxw9fyi
+    IiZQWIzImzzwUabuF/699Axx77sOQRaUcBkxcpzGxeMI03MHDqKIsToM4J7Bc7zB
+    Zmn/kBqkvx6By4dpgIbkSVN5TGSN9bRRb0AX/a1QcC/MoiGiDyR0qSPE2ryPLtiU
+    7nIljsSV3W+joIST5XPly72m6F3KdfQnyHqujJylIAs7jIv+8BD5GdXyXe+zvoHz
+    6lIyocTKpyqLMpMUAOWlf9tW9wimK9OxBp84UZ/soEEueLr7iLs+L14MeKI1FnlR
+    WMUjFJ0wNfML9Cnr7y+73U9drvOTRO0NDScAWHPDwQKBgQDVmcjHbJW1Zqgu6LC1
+    OjuA1Luo12zQndw06HaKI9tqjqOKfaPwp2esTjOs1XOm2vFhVhmMC2owRjvv3iDc
+    AsqFIRox6XOMcRLHiSIcTjoZg+sRBzUb1KpS4mFX5R85NFuMwolO5aUSuxWFYsy1
+    4IPZ/fc3GevIkml3J6tqZHnQdQKBgQDAsJPDdIiIZnke6gP8X4uSQSlM5CcwbDc+
+    jJYEk4gEmS4zPm4xsJEaqJMXSTP5bBCYo7keHXHBaXs79yah9ncDf95g07bUwueA
+    sEMWAk3gH6Ko1zThFW+F2g45ZerthUERsVqVYQWioW3KHRuZeFRIkJ1hMUD3vD6D
+    DS6b0zhXhwKBgG2Ng3HtGlfAwC/W/pLkvBIWie1OGCxjWsb0F6BARdBAOlbUm9nZ
+    Mo4oSc6yZ6/DiZvfuhie3ibGTwV2yymscMyZLsM8thvo/rXCevFDmf7uLwk7xhxx
+    Fa6PF1gqVrpTRUVLnXsOw3x44c/Y3Z/G+Dk9TadALzNfDKKlgQB/ag7lAoGBAIkR
+    Ups32yOEGWanOtycrrEEDzf2F/Z3FDk3UkPBGoGC4X1sTICmRCH9hlyLIyCrAYdC
+    95z3fwMBYLtATUfrBbAElpC0KZthZcKCH8aZLwJeHpwSMjhmwiUp/vJPkHUTVD0c
+    tv4JvTN5t5qNaCOcl//id0E7Ayb2zlT03JHWB38jAoGBAL+WBXxWcKxqXBjQNy1i
+    5LnuxIThU1dyCCEyUxI/hlfbyo4fqU4qVm9+TWmZEadOyMQ0ea4SxH80TQ1oZ5Yf
+    OHmPll96XVdHNEi2PTqOOD7ELSzcHcHL+jQ0wBoslPPGXP4zS1fTqg616blTEHqX
+    3YnLFRFcij4t3du6hCE3Obv4
+    -----END PRIVATE KEY-----

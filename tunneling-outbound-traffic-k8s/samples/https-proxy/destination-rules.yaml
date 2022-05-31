@@ -1,0 +1,34 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: tunnel-outbound-traffic-to-external-app-via-external-forward-proxy
+spec:
+  host: external-forward-proxy.external.svc.cluster.local
+  subsets:
+  - name: external-app-8080
+    trafficPolicy:
+      tunnel:
+        protocol: CONNECT
+        targetHost: external-app.external.svc.cluster.local
+        targetPort: 8080
+  - name: external-app-443
+    trafficPolicy:
+      tunnel:
+        protocol: CONNECT
+        targetHost: external-app.external.svc.cluster.local
+        targetPort: 443
+---
+# TODO: Originating TLS must be included in subsets, otherwise cluster will not be found
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: originate-tls-for-outbound-traffic-to-external-forward-proxy
+spec:
+  host: external-forward-proxy.external.svc.cluster.local
+  trafficPolicy:
+    portLevelSettings:
+    - port:
+        number: 3128
+      tls:
+        mode: SIMPLE
+        sni: external-forward-proxy.external.svc.cluster.local

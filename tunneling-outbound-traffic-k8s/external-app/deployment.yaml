@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-app
+  template:
+    metadata:
+      labels:
+        app: external-app
+    spec:
+      containers:
+      - name: external-app
+        image: nginx:1.21-alpine
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx
+        - name: ssl-certificate
+          mountPath: /etc/pki/tls/certs
+        - name: ssl-private-key
+          mountPath: /etc/pki/tls/private
+        - name: var-log
+          mountPath: /var/log/nginx
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: external-app-config
+      - name: ssl-certificate
+        configMap:
+          name: external-app-ssl-certificate
+      - name: ssl-private-key
+        configMap:
+          name: external-app-ssl-private-key
+      - name: var-log
+        emptyDir: {}

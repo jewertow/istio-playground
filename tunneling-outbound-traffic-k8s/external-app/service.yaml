@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-app
+spec:
+  selector:
+    app: external-app
+  ports:
+  - name: tcp
+    protocol: TCP
+    port: 8080
+    targetPort: 8080
+  - name: tls
+    protocol: TCP
+    port: 443
+    targetPort: 443

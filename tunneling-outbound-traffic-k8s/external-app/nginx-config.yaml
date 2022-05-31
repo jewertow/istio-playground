@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: external-app-config
+data:
+  nginx.conf: |-
+    events {}
+    http {
+      log_format main '$remote_addr - $request_method $scheme://$host:$server_port$request_uri - $status';
+      access_log /var/log/nginx/access.log main;
+
+      server {
+        listen      8080;
+        server_name external-app.external.svc.cluster.local;
+
+        location /test/ {
+          return 200;
+        }
+      }
+
+      server {
+        listen      443 ssl;
+        server_name external-app.external.svc.cluster.local;
+
+        ssl_certificate     /etc/pki/tls/certs/external-app.external.svc.cluster.local.crt;
+        ssl_certificate_key /etc/pki/tls/private/external-app.external.svc.cluster.local.key;
+
+        location /test/ {
+          return 200;
+        }
+      }
+    }

@@ -1,35 +1,47 @@
-#!/bin/bash
+#!/bin/sh
+
+if [ -z "$HOST" ]
+then
+  echo "Environment variable HOST must be exported or passed to the script."
+  exit 1
+fi
+
+if [ -z "$DOMAIN" ]
+then
+  echo "Environment variable DOMAIN must be exported or passed to the script."
+  exit 1
+fi
 
 # create a root certificate and private key to sign the certificate
 openssl req -x509 -sha256 -nodes \
     -days 365 \
     -newkey rsa:2048 \
-    -subj '/CN=external-app.corp.net' \
-    -keyout ca.corp.net.key \
-    -out ca.corp.net.crt
+    -subj "/CN=ca.${DOMAIN}" \
+    -keyout ca."${DOMAIN}".key \
+    -out ca."${DOMAIN}".crt
 
 # create a certificate and a private key for external-app.corp.net
 openssl req -newkey rsa:2048 -nodes \
-    -subj "/CN=external-app.corp.net" \
-    -keyout external-app.corp.net.key \
-    -out external-app.corp.net.csr
+    -subj "/CN=${HOST}.${DOMAIN}" \
+    -keyout "${HOST}"."${DOMAIN}".key \
+    -out "${HOST}"."${DOMAIN}".csr
 openssl x509 -req \
     -days 365 \
-    -CA ca.corp.net.crt \
-    -CAkey ca.corp.net.key \
+    -CA ca."${DOMAIN}".crt \
+    -CAkey ca."${DOMAIN}".key \
     -set_serial 0 \
-    -in external-app.corp.net.csr \
-    -out external-app.corp.net.crt
+    -in "${HOST}"."${DOMAIN}".csr \
+    -out "${HOST}"."${DOMAIN}".crt
 
 # generate client certificate and private key
 openssl req -newkey rsa:2048 -nodes \
-    -out internal-client.corp.net.csr \
-    -keyout internal-client.corp.net.key \
-    -subj "/CN=internal-client.corp.net"
+    -out client."${DOMAIN}".csr \
+    -keyout client."${DOMAIN}".key \
+    -subj "/CN=internal-client.${DOMAIN}"
 openssl x509 -req \
     -days 365 \
-    -CA ca.corp.net.crt \
-    -CAkey ca.corp.net.key \
+    -CA ca."${DOMAIN}".crt \
+    -CAkey ca."${DOMAIN}".key \
     -set_serial 1 \
-    -in internal-client.corp.net.csr \
-    -out internal-client.corp.net.crt
+    -in client."${DOMAIN}".csr \
+    -out client."${DOMAIN}".crt

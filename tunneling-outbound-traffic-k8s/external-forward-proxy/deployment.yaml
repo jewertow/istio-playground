@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-forward-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-forward-proxy
+  template:
+    metadata:
+      labels:
+        app: external-forward-proxy
+    spec:
+      containers:
+      - name: external-forward-proxy
+        image: envoyproxy/envoy:v1.21.0
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: external-forward-proxy-config
+          mountPath: /etc/envoy
+        - name: ssl-certificate
+          mountPath: /etc/pki/tls/certs
+        - name: ssl-private-key
+          mountPath: /etc/pki/tls/private
+        - name: var-log
+          mountPath: /var/log
+      volumes:
+      - name: external-forward-proxy-config
+        configMap:
+          name: external-forward-proxy-config
+      - name: ssl-certificate
+        configMap:
+          name: external-forward-proxy-ssl-certificate
+      - name: ssl-private-key
+        configMap:
+          name: external-forward-proxy-ssl-private-key
+      - name: var-log
+        emptyDir: {}

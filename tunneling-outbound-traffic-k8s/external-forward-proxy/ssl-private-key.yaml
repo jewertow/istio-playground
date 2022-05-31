@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: external-forward-proxy-ssl-private-key
+data:
+  external-forward-proxy.external.svc.cluster.local.key: |-
+    -----BEGIN PRIVATE KEY-----
+    MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDbluuvLEneMFMc
+    3jRXHWmsau1bq4/mwZuoxDCmzYTmtggtFMRSuN9bBKYDwWslo/Rabh45fPdY0ghd
+    t5vduF9UgH81nPNFxvGLpKn0PUlejjGnvGLQct7UN9gw89Hrn5Bm1+q1wWC6hVW9
+    xGUPMqH+dbrc+syJqgdhjAGT3BqfmYdU4Wa4RKwRRqw3R8XBmQrODgSTnDepCUm5
+    TmteG2K1gVfLO1BZxRkhqbyhm+hoxFdcu15v9Y7Oh/4BjiijizZRYrEqN1g27u2g
+    lKMtbJmgDBvegE+t8bBNMrjSHm4/Jzu1n3d7bvxSXF/jwctO7HOIN2DG7I+jmmd8
+    FXE0myrhAgMBAAECggEAb255sU4POiJZuteDxgVV/7nPM2qvPpFXFWBhs/OtEoqj
+    QYU9TyEjrwN/334CinpV4KHq0o940Wjb9/rZrL0IG1CNvT4lMW6QWqW33QpQthwA
+    VLdDibYRH64rFkRUbXZuh9Hf+FXmaSCKbx8/jWPLUt6ZcdQPgXh4AGdU0ZyrIfuM
+    zdNcah57N5aneINvYAknRB9mkUQqsEWGBh5lCkxC0a9l9uYN/UqHpyJyDAssbZ5t
+    2sEiGZgfmtJtRDttXvjuutgFAzZps4pjDVaA7ZzYnLU1bNr1qMu1xEYsYZNxukG5
+    DMd8Z95bo1YuTCdJkbPCUGL5C6gHF5P0vWcX9y7apQKBgQD9AgYhzfw/NyabfDeA
+    4BJm7/D5wE/+e3MtWFo9Sn6i8I60uAI57OvtCIimXHfEo7LlRwjW9flA1SdStexl
+    BHhMGXAhAh2a/nF6ZAk6Xei2jxNBIR2QPbAOjY8sFI1Bg+mgoYngs+CSHi474S9S
+    6UBg7qrWXMzZC7jDiJskTFyXxwKBgQDeL7kovvA5I4vU6UH7MB1ZgaT4KURTcGJ+
+    +QJxRYV6b+0DQynmqpwvM/B3piUdGvGokyk+Pk3cAtxgg/8MC5e7aTbZkS9uhT4O
+    PPDI/ddbuuQR4J1kXqghDVTcDRPFNVRJz4xYt/CMSpD7JAl0ZPwLDhTHFRhnBqRn
+    Qp5KrDo4FwKBgQDwNs65o8feAS/fqiVMb/Io16D0jzmkBXOKVvt+e88WRs1HGfnL
+    I32wVEzhnqN8CGxesX3cEjfv7TDjn6RtGLxajEBgppCTSwdUy8vTJbxAMEF4scdO
+    3rLcblzD3lNrI6Jah2TP+hi6wnrlEV0MHDeqkI+U7RD09eMbiwS5huLWmwKBgQDM
+    lnEOfdLBKmQFpstkukcsNd5ry8PoeOGZPTzshDGGLi22BVA93/d014SjB8/A3yCK
+    MweVEtWqss+t550fwET1AsrIx5E/WV1sytyEloiJJKwBciw7UZXK6XWsMjZ0Lsjw
+    NjZrMuRCqh6ZwfMaxCn5G/wx3NDdfRZBJuyOocvx/QKBgQCiFbj71Hw/mB+LwJB9
+    uoSYepz3oUlgy1tJ95eujogQ7rHSS7UK5uRBqb6hlpzpzyP/uMF0a8c/XkBn8F70
+    hceQtV9gTIICgMw0Losr2MRb/FAnhFTMInNaJQ/y5t8jgQySCXp7w+bsncYFTngx
+    k17vKBLdDaSGTrpie7lJp0z4Sg==
+    -----END PRIVATE KEY-----

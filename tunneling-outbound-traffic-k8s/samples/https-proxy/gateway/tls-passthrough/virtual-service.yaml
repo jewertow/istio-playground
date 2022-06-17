@@ -1,35 +1,51 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: external-app-via-egress-gateway
+  name: external-app-route-via-egress-gateway
 spec:
   hosts:
-  - external-app.corp.net
+  - external-app.external.svc.cluster.local
   gateways:
-  - istio-egressgateway
   - mesh
   tls:
   - match:
-    - gateways:
-      - mesh
-      port: 443
+    - port: 443
       sniHosts:
-      - external-app.corp.net
+      - external-app.external.svc.cluster.local
     route:
     - destination:
         host: istio-egressgateway.istio-system.svc.cluster.local
         port:
           number: 443
+  tcp:
+  - match:
+    - port: 8080
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        subset: originate-tls-for-plain-traffic-to-external-app
+        port:
+          number: 443
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: external-app-route-via-external-forward-proxy
+spec:
+  hosts:
+  - external-app.external.svc.cluster.local
+  gateways:
+  - istio-egressgateway
+  tls:
   - match:
     - gateways:
       - istio-egressgateway
       port: 443
       sniHosts:
-      - external-app.corp.net
+      - external-app.external.svc.cluster.local
     route:
     - destination:
-        host: external-forward-proxy.corp.net
+        host: external-forward-proxy.external.svc.cluster.local
         subset: external-app-443
-#        subset: external-app-8443
         port:
-          number: 3443
+          number: 3128

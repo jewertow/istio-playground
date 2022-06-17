@@ -18,7 +18,6 @@ spec:
         targetHost: external-app.external.svc.cluster.local
         targetPort: 443
 ---
-# TODO: Originating TLS must be included in subsets, otherwise cluster will not be found
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:

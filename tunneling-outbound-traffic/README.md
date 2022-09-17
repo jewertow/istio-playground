@@ -1,62 +1,51 @@
 ## Tunneling outbound traffic with Istio
 
+This repository contains my scripts and configs to develop and test Istio [tunneling API](https://istio.io/latest/docs/reference/config/networking/destination-rule/#TrafficPolicy-TunnelSettings).
+
 ![tunneling-traffic](docs/solution.jpg)
 
-### Prerequisites
+### Setup tools and environment
 
-#### 1. Istio
-Download and build Istio from my fork.
+#### 1. Istio 1.15
 ```sh
-git clone https://github.com/jewertow/upstream-istio
-cd istio
-export ISTIO_SRC=$(pwd)
-export TAG=tunnel-api
-make gen
-make build
-make docker
+curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.15.0 TARGET_ARCH=x86_64 sh -
+export PATH=$PWD/istio-1.15.0/bin:$PATH
 ```
 
 #### 2. Envoy
 Envoy is used as the forward proxy. The script below pulls container with Envoy and extracts binary to host.
 ```sh
-(cd infra/forward-proxy; ./get-envoy.sh)
+./infra/forward-proxy/get-envoy.sh
+mv envoy infra/forward-proxy
 ```
 
 #### 3. Kubernetes
 ```sh
-(cd infra/k8s;
-wget -O k0s "https://github.com/k0sproject/k0s/releases/download/v1.23.1+k0s.1/k0s-v1.23.1+k0s.1-amd64" ;
-chmod u+x k0s)
+wget -O k0s "https://github.com/k0sproject/k0s/releases/download/v1.24.4+k0s.0/k0s-v1.24.4+k0s.0-amd64"
+chmod u+x k0s
+mv k0s infra/k8s
 ```
 
-### Setup environment
-1. Generate nginx configurations
+#### 4. Nginx configurations
 ```sh
-(cd infra/external-app; ansible-playbook generate-nginx-configs.yaml)
+ansible-playbook infra/external-app/generate-nginx-configs.yaml
 ```
 
-2. Run VMs
+#### 5. Run VMs
 ```sh
 vagrant up
 ```
 
-3. Configure kube config file
+#### 6. Configure kube config file
 ```sh
 vagrant ssh k8s -c 'sudo cat /var/lib/k0s/pki/admin.conf' > ~/.kube/config-vagrant-k0s
 export KUBECONFIG=~/.kube/config-vagrant-k0s
 ```
 
-4. Upload container images from host to k8s VM:
+#### 7. Install Istio
 ```sh
-./infra/k8s/upload-images.sh tunneling
-```
-
-6. Install Istio
-```sh
-$ISTIO_SRC/out/linux_amd64/istioctl install -y \
+istioctl install -y \
     --set profile=demo \
     --set meshConfig.accessLogFile=/dev/stdout \
-    --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY \
-    --set hub="localhost:5000" \
-    --set tag="tunnel-api"
+    --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY
 ```

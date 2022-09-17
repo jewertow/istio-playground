@@ -7,8 +7,7 @@ spec:
   subsets:
   - name: external-app-80
     trafficPolicy:
-      tunneling:
-        protocol: connect
+      tunnel:
         targetHost: external-app.corp.net
         targetPort: 80
       portLevelSettings:
@@ -19,8 +18,7 @@ spec:
           sni: external-forward-proxy.corp.net
   - name: external-app-443
     trafficPolicy:
-      tunneling:
-        protocol: connect
+      tunnel:
         targetHost: external-app.corp.net
         targetPort: 443
       portLevelSettings:
@@ -31,8 +29,7 @@ spec:
           sni: external-forward-proxy.corp.net
   - name: external-app-8443
     trafficPolicy:
-      tunneling:
-        protocol: connect
+      tunnel:
         targetHost: external-app.corp.net
         targetPort: 8443
       portLevelSettings:

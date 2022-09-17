@@ -5,18 +5,13 @@
 kubectl label namespace default istio-injection=enabled
 ```
 
-2. Create config maps with SSL keys:
+2. Deploy "sleep" client app:
 ```sh
-(cd ../ssl-certificates; ./generate.sh)
-./ssl-configmap.sh ../ssl-certificates
-```
-
-3. Deploy sleep app:
-```sh
+kubectl apply -f sleep-client-cert-configmap.yaml
 kubectl apply -f sleep.yaml
 ```
 
-4. Create service entries for external services:
+3. Create service entries for external services:
 ```sh
 kubectl apply -f service-entries.yaml
 ```

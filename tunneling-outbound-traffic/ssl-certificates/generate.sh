@@ -37,7 +37,7 @@ openssl x509 -req \
 openssl req -newkey rsa:2048 -nodes \
     -out client."${DOMAIN}".csr \
     -keyout client."${DOMAIN}".key \
-    -subj "/CN=internal-client.${DOMAIN}"
+    -subj "/CN=client.${DOMAIN}"
 openssl x509 -req \
     -days 365 \
     -CA ca."${DOMAIN}".crt \

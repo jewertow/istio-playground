@@ -6,7 +6,7 @@ spec:
   selector:
     app: external-forward-proxy
   ports:
-  - name: https-connect
+  - name: http-connect
     protocol: TCP
     port: 3128
     targetPort: 3128

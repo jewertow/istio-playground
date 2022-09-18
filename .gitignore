@@ -5,5 +5,5 @@
 **/*.pcap
 **/*.tar
 
-tunneling-outbound-traffic/infra/external-app/http.conf
-tunneling-outbound-traffic/infra/external-app/http2.conf
+tunneling-outbound-traffic-vms/infra/external-app/http.conf
+tunneling-outbound-traffic-vms/infra/external-app/http2.conf

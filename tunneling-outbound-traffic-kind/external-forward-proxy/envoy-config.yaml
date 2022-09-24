@@ -25,7 +25,7 @@ data:
               - name: envoy.access_loggers.file
                 typed_config:
                   "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog"
-                  path: /var/log/access.log
+                  path: /dev/stdout
                   format: "%DOWNSTREAM_REMOTE_ADDRESS% %REQ(:METHOD)% %UPSTREAM_HOST% %RESPONSE_CODE%\n"
               codec_type: HTTP1
               http_filters:

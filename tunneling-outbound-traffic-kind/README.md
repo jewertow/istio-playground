@@ -1,4 +1,4 @@
-## Tunneling outbound traffic with Istio inside k8s
+## Tunneling outbound traffic with Istio on Kubernetes or OpenShift
 
 #### 1. Setup KinD or OpenShift cluster
 ```shell
@@ -42,7 +42,6 @@ EOF
 
 #### 3. Enable sidecar injection:
 ```sh
-kubectl label namespace default istio-injection=enabled
 # on openshift additionally set proper security context and network attachment
 oc adm policy add-scc-to-group anyuid system:serviceaccounts:default
 cat <<EOF | oc -n default create -f -
@@ -51,6 +50,7 @@ kind: NetworkAttachmentDefinition
 metadata:
   name: istio-cni
 EOF
+kubectl label namespace default istio-injection=enabled
 ```
 
 #### 4. Deploy sleep app:
@@ -59,10 +59,12 @@ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.15/samp
 ```
 
 #### 5. Create namespace for "external" workloads:
+It's important to NOT enabling sidecar injection.
 ```shell
 kubectl create namespace external
 # in case of testing on OpenShift
 oc new-project external
+oc project default
 ```
 
 #### 6. Deploy Envoy acting as a forward proxy:
@@ -86,15 +88,16 @@ kubectl apply -f external-app/service.yaml -n external
 ```
 
 #### 6. Enable tunneling and originating TLS during connection to external-forward-proxy
+TODO: explain why destination rules must be applied to the "external" namespace
 ```shell
 kubectl apply -f samples/https-proxy/destination-rules.yaml -n external
 ```
 
 7. Test connection:
 ```shell
-kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- \
+kubectl exec $(kubectl get pods -l app=sleep -n default -o jsonpath='{.items[].metadata.name}') -n default -c sleep -- \
     curl -v http://external-app.external.svc.cluster.local:8080/test/1
-kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- \
+kubectl exec $(kubectl get pods -l app=sleep -n default -o jsonpath='{.items[].metadata.name}') -n default -c sleep -- \
     curl -v --insecure https://external-app.external.svc.cluster.local/test/2
 ```
 
@@ -116,3 +119,5 @@ kubectl delete -f https://raw.githubusercontent.com/istio/istio/release-1.13/sam
 
 kind delete cluster --name istio-tunneling-demo
 ```
+
+TODO: add timestamp to external-forward-proxy-logs

@@ -1,4 +1,4 @@
-## Tunneling outbound traffic with Istio
+## Tunneling outbound traffic with Istio on Kubernetes and external VMs
 
 This repository contains my scripts and configs to develop and test Istio [tunneling API](https://istio.io/latest/docs/reference/config/networking/destination-rule/#TrafficPolicy-TunnelSettings).
 

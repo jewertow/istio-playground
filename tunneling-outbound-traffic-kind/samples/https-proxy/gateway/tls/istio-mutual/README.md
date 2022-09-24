@@ -12,8 +12,8 @@ istioctl pc clusters deploy/sleep.default | grep egress
 ```
 and expected result is as below:
 ```shell
-istio-egressgateway.istio-system.svc.cluster.local 80  - outbound    EDS  originate-mtls-for-external-svc.default
-istio-egressgateway.istio-system.svc.cluster.local 443 - outbound    EDS  originate-mtls-for-external-svc.default
+istio-egressgateway.istio-system.svc.cluster.local 80  - outbound    EDS  originate-mtls-for-egress-gateway.default
+istio-egressgateway.istio-system.svc.cluster.local 443 - outbound    EDS  originate-mtls-for-egress-gateway.default
 ```
 
 Cleanup resources:

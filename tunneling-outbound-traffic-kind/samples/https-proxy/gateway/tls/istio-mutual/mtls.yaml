@@ -1,7 +1,7 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: originate-mtls-for-external-svc
+  name: originate-mtls-for-egress-gateway
 spec:
   host: istio-egressgateway.istio-system.svc.cluster.local
   trafficPolicy:

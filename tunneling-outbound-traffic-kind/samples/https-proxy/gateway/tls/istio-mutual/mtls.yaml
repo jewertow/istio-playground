@@ -7,7 +7,6 @@ spec:
   subsets:
   - name: originate-mtls-for-external-svc
     trafficPolicy:
-      # TODO: Remove port 80
       portLevelSettings:
       - port:
           number: 80

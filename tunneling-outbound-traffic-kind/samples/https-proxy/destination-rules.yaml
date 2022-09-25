@@ -8,13 +8,11 @@ spec:
   - name: external-app-8080
     trafficPolicy:
       tunnel:
-        protocol: CONNECT
         targetHost: external-app.external.svc.cluster.local
         targetPort: 8080
   - name: external-app-443
     trafficPolicy:
       tunnel:
-        protocol: CONNECT
         targetHost: external-app.external.svc.cluster.local
         targetPort: 443
 ---
@@ -25,9 +23,6 @@ metadata:
 spec:
   host: external-forward-proxy.external.svc.cluster.local
   trafficPolicy:
-    portLevelSettings:
-    - port:
-        number: 3128
-      tls:
-        mode: SIMPLE
-        sni: external-forward-proxy.external.svc.cluster.local
+    tls:
+      mode: SIMPLE
+      sni: external-forward-proxy.external.svc.cluster.local

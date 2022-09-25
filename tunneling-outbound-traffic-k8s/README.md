@@ -9,15 +9,20 @@ oc login -u kubeadmin https://api.crc.testing:6443
 ```
 
 #### 2. Install Istio 1.15
+First download Istio:
 ```shell
 curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.15.0 TARGET_ARCH=x86_64 sh -
 export PATH=$PWD/istio-1.15.0/bin:$PATH
-# on k8s
+```
+Install on Kubernetes:
+```shell
 istioctl install -y \
     --set profile=demo \
     --set meshConfig.accessLogFile=/dev/stdout \
     --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY
-# on openshift
+```
+Install on OpenShift:
+```shell
 oc adm policy add-scc-to-group anyuid system:serviceaccounts:istio-operator
 istioctl operator init
 oc adm policy add-scc-to-group anyuid system:serviceaccounts:istio-system
@@ -41,8 +46,11 @@ EOF
 ```
 
 #### 3. Enable sidecar injection:
-```sh
-# on openshift additionally set proper security context and network attachment
+```shell
+kubectl label namespace default istio-injection=enabled
+```
+On OpenShift additionally set proper security context and network attachment
+```shell
 oc adm policy add-scc-to-group anyuid system:serviceaccounts:default
 cat <<EOF | oc -n default create -f -
 apiVersion: "k8s.cni.cncf.io/v1"
@@ -50,24 +58,32 @@ kind: NetworkAttachmentDefinition
 metadata:
   name: istio-cni
 EOF
-kubectl label namespace default istio-injection=enabled
 ```
 
-#### 4. Deploy sleep app:
-```sh
+#### 4. Deploy sleep app
+```shell
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.15/samples/sleep/sleep.yaml
+```
+Optionally install Kiali, Prometheus and Grafana:
+```shell
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.15/samples/addons/prometheus.yaml
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.15/samples/addons/grafana.yaml
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.15/samples/addons/kiali.yaml
 ```
 
 #### 5. Create namespace for "external" workloads:
-It's important to NOT enabling sidecar injection.
+On Kubernetes:
 ```shell
 kubectl create namespace external
-# in case of testing on OpenShift
+```
+On OpenShift:
+```shell
 oc new-project external
 oc project default
 ```
+It is important to **NOT** enabling sidecar injection in this namespace.
 
-#### 6. Deploy Envoy acting as a forward proxy:
+#### 6. Deploy a forward proxy:
 ```shell
 kubectl apply -f external-forward-proxy/ssl-certificate.yaml -n external
 kubectl apply -f external-forward-proxy/ssl-private-key.yaml -n external
@@ -76,9 +92,9 @@ kubectl apply -f external-forward-proxy/deployment.yaml -n external
 kubectl apply -f external-forward-proxy/service.yaml -n external
 ```
 
-#### 7. Deploy target server:
+#### 7. Deploy an external app:
+**TODO**: set proper permissions in external-app deployment and remove the security context below
 ```shell
-# TODO: set proper permissions in external-app deployment and remove the security context below
 oc adm policy add-scc-to-group anyuid system:serviceaccounts:external
 kubectl apply -f external-app/ssl-certificate.yaml -n external
 kubectl apply -f external-app/ssl-private-key.yaml -n external
@@ -88,7 +104,7 @@ kubectl apply -f external-app/service.yaml -n external
 ```
 
 #### 6. Enable tunneling and originating TLS during connection to external-forward-proxy
-TODO: explain why destination rules must be applied to the "external" namespace
+**TODO**: explain why destination rules must be applied to the "external" namespace
 ```shell
 kubectl apply -f samples/https-proxy/destination-rules.yaml -n external
 ```

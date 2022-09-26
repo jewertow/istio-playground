@@ -1,9 +1,12 @@
 ## Tunneling outbound traffic with Istio on Kubernetes or OpenShift
 
-#### 1. Setup KinD or OpenShift cluster
+#### 1. Setup Kubernetes or OpenShift cluster
+KinD:
 ```shell
 kind create cluster --name istio-tunneling-demo
-# in case of testing on OpenShift
+```
+OpenShift:
+```shell
 crc start
 oc login -u kubeadmin https://api.crc.testing:6443
 ```

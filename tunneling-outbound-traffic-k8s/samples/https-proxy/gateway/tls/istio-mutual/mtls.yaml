@@ -8,7 +8,6 @@ spec:
     # Traffic on port 80 will be sent as plain text to the final destination, because the destination rule below
     # originates mTLS only between a sidecar proxy and an egress gateway listening in ISTIO_MUTUAL mode
     # which terminates connection and then forwards as is.
-    # To encrypt this traffic when leaves egress gateway, it's required to apply another destination rule originating TLS.
     tls:
       mode: ISTIO_MUTUAL
       sni: external-app.external.svc.cluster.local

@@ -1,0 +1,24 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 80
+      name: tls-port-for-routing-http-traffic
+      protocol: TLS
+    hosts:
+    - external-app.external.svc.cluster.local
+    tls:
+      mode: ISTIO_MUTUAL
+  - port:
+      number: 443
+      name: tls-port-for-routing-https-traffic
+      protocol: TLS
+    hosts:
+    - external-app.external.svc.cluster.local
+    tls:
+      mode: ISTIO_MUTUAL

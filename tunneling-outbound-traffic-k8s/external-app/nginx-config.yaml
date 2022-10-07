@@ -7,7 +7,7 @@ data:
     events {}
     http {
       log_format main '$remote_addr - $request_method $scheme://$host:$server_port$request_uri - $status';
-      access_log /var/log/nginx/access.log main;
+      access_log /dev/stdout main;
 
       server {
         listen      8080;

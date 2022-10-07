@@ -27,8 +27,8 @@ kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.nam
 # This requires to apply subset external-app-8443 for external-forward-proxy
 kubectl exec $(kubectl get pods -l app=sleep -o jsonpath='{.items[].metadata.name}') -c sleep -- \
     curl -v --insecure \
-    --cert /etc/pki/tls/certs/client-crt.pem \
-    --key /etc/pki/tls/private/client-key.pem \
+    --cert /etc/pki/tls/client-crt.pem \
+    --key /etc/pki/tls/client-key.pem \
     https://external-app.corp.net
 ```
 

@@ -6,7 +6,8 @@ spec:
   selector:
     app: external-forward-proxy
   ports:
-  - name: https-connect
+  # Istio will deduce HTTP/1.1 protocol based on a name of a port
+  - name: http-connect
     protocol: TCP
     port: 3128
     targetPort: 3128

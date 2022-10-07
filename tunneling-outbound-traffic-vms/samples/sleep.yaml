@@ -42,20 +42,9 @@ spec:
         command: ["/bin/sleep", "3650d"]
         imagePullPolicy: IfNotPresent
         volumeMounts:
-        - mountPath: /etc/pki/tls/certs
-          name: client-certificate
-        - mountPath: /etc/pki/tls/private
-          name: client-key
-        - mountPath: /etc/sleep/tls
-          name: secret-volume
+        - mountPath: /etc/pki/tls
+          name: client-tls-data
       volumes:
-      - name: client-certificate
+      - name: client-tls-data
         configMap:
-          name: client-crt
-      - name: client-key
-        configMap:
-          name: client-key
-      - name: secret-volume
-        secret:
-          secretName: sleep-secret
-          optional: true
+          name: sleep-client-tls-data

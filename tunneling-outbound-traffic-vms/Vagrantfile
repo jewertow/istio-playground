@@ -12,10 +12,9 @@ Vagrant.configure("2") do |config|
     node.vm.provider :virtualbox do |vb|
       vb.memory = 512
       vb.cpus = 1
-      vb.customize ["modifyvm", :id, "--nictrace1", "on"]
-      vb.customize ["modifyvm", :id, "--nictracefile1", "dns.pcap"]
     end
 
+    # TODO: Replace with CentOS
     node.vm.box = "ubuntu/bionic64"
     node.vm.hostname = "ns.corp.net"
     node.vm.network :private_network, ip: PRIVATE_DNS_IP
@@ -36,10 +35,9 @@ Vagrant.configure("2") do |config|
     node.vm.provider :virtualbox do |vb|
       vb.memory = 4096
       vb.cpus = 2
-      vb.customize ["modifyvm", :id, "--nictrace1", "on"]
-      vb.customize ["modifyvm", :id, "--nictracefile1", "k8s.pcap"]
     end
 
+    # TODO: Replace with CentOS
     node.vm.box = "ubuntu/bionic64"
     node.vm.hostname = "k8s"
     node.vm.network :private_network, ip: K8S_IP
@@ -59,10 +57,9 @@ Vagrant.configure("2") do |config|
     node.vm.provider :virtualbox do |vb|
       vb.memory = 512
       vb.cpus = 1
-      vb.customize ["modifyvm", :id, "--nictrace1", "on"]
-      vb.customize ["modifyvm", :id, "--nictracefile1", "proxy.pcap"]
     end
 
+    # TODO: Replace with CentOS
     node.vm.box = "ubuntu/bionic64"
     node.vm.hostname = "external-proxy"
     node.vm.network :private_network, ip: PROXY_IP
@@ -96,18 +93,17 @@ Vagrant.configure("2") do |config|
     node.vm.provider :virtualbox do |vb|
       vb.memory = 512
       vb.cpus = 1
-      vb.customize ["modifyvm", :id, "--nictrace1", "on"]
-      vb.customize ["modifyvm", :id, "--nictracefile1", "app.pcap"]
     end
 
+    # TODO: Replace with CentOS
     node.vm.box = "ubuntu/bionic64"
     node.vm.hostname = "external-app"
     node.vm.network :private_network, ip: EXT_APP_IP
 
     # SSL certificates
-    node.vm.provision :file, source: "ssl-certificates/external-app.corp.net.crt", destination: "/home/vagrant/external-app.corp.net.crt"
-    node.vm.provision :file, source: "ssl-certificates/external-app.corp.net.key", destination: "/home/vagrant/external-app.corp.net.key"
-    node.vm.provision :file, source: "ssl-certificates/ca.corp.net.crt",           destination: "/home/vagrant/ca.corp.net.crt"
+    node.vm.provision :file, source: "infra/external-app/external-app.corp.net.crt", destination: "/home/vagrant/external-app.corp.net.crt"
+    node.vm.provision :file, source: "infra/external-app/external-app.corp.net.key", destination: "/home/vagrant/external-app.corp.net.key"
+    node.vm.provision :file, source: "infra/external-app/ca.corp.net.crt",           destination: "/home/vagrant/ca.corp.net.crt"
 
     # nginx config
     node.vm.provision :file, source: "infra/external-app/http.conf", destination: "/home/vagrant/http.conf"

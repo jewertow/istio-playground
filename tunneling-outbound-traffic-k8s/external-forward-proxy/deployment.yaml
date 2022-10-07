@@ -23,8 +23,6 @@ spec:
           mountPath: /etc/pki/tls/certs
         - name: ssl-private-key
           mountPath: /etc/pki/tls/private
-        - name: var-log
-          mountPath: /var/log
       volumes:
       - name: external-forward-proxy-config
         configMap:
@@ -35,5 +33,3 @@ spec:
       - name: ssl-private-key
         configMap:
           name: external-forward-proxy-ssl-private-key
-      - name: var-log
-        emptyDir: {}

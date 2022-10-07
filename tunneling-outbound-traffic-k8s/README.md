@@ -34,7 +34,7 @@ apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
 metadata:
   namespace: istio-system
-  name: example-istiocontrolplane
+  name: istio-tunneling-outbound-traffic
 spec:
   profile: openshift
   components:
@@ -109,7 +109,7 @@ kubectl apply -f external-app/service.yaml -n external
 #### 6. Enable tunneling and originating TLS during connection to external-forward-proxy
 **TODO**: explain why destination rules must be applied to the "external" namespace
 ```shell
-kubectl apply -f samples/https-proxy/destination-rules.yaml -n external
+kubectl apply -f samples/destination-rules.yaml -n external
 ```
 
 7. Test connection:

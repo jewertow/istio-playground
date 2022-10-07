@@ -1,4 +1,9 @@
-TODO: describe this case
+## Tunneling through a TLS ISTIO_MUTUAL gateway
+
+Traffic being sent to port 8080 won't be encrypted when leaving gateway,
+because the destination rule applied in this example originates mTLS
+only between a sidecar proxy and an egress gateway listening
+in **ISTIO_MUTUAL** mode which terminates connection and then forwards as is.
 
 ```shell
 kubectl apply -f gateway.yaml

@@ -17,6 +17,8 @@ First download Istio:
 curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.15.0 TARGET_ARCH=x86_64 sh -
 export PATH=$PWD/istio-1.15.0/bin:$PATH
 ```
+TODO: configure discovery selectors
+
 Install on Kubernetes:
 ```shell
 istioctl install -y \
@@ -96,9 +98,11 @@ kubectl apply -f external-forward-proxy/service.yaml -n external
 ```
 
 #### 7. Deploy an external app:
-**TODO**: set proper permissions in external-app deployment and remove the security context below
+On OpenShift (**TODO**: set proper permissions in external-app deployment and remove the security context below)
 ```shell
 oc adm policy add-scc-to-group anyuid system:serviceaccounts:external
+```
+```shell
 kubectl apply -f external-app/ssl-certificate.yaml -n external
 kubectl apply -f external-app/ssl-private-key.yaml -n external
 kubectl apply -f external-app/nginx-config.yaml -n external

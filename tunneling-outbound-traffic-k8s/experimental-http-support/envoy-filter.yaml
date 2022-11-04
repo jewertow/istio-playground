@@ -1,0 +1,94 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: sleep-tunnel-traffic-to-wikipedia-via-external-forward-proxy
+  namespace: default
+spec:
+  workloadSelector:
+    labels:
+      app: sleep
+  configPatches:
+  - applyTo: VIRTUAL_HOST
+    match:
+      context: SIDECAR_OUTBOUND
+      routeConfiguration:
+        name: "80"
+    patch:
+      operation: ADD
+      value:
+        name: "www.wikipedia.org:80"
+        domains:
+        - "www.wikipedia.org"
+        routes:
+        - match:
+            prefix: "/"
+          route:
+            cluster: outbound|443||www.wikipedia.org
+  - applyTo: LISTENER
+    patch:
+      operation: ADD
+      value:
+        name: "tunnel-0.0.0.0_443"
+        address:
+          pipe:
+            path: "@/tunnel-0.0.0.0_443"
+        listener_filters:
+        - name: envoy.filters.listener.tls_inspector
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+        filter_chains:
+        - filter_chain_match:
+            transport_protocol: tls
+            server_names:
+            - "www.wikipedia.org"
+          filters:
+          - name: istio.stats
+            typed_config:
+              "@type": "type.googleapis.com/udpa.type.v1.TypedStruct"
+              type_url: "type.googleapis.com/envoy.extensions.filters.network.wasm.v3.Wasm"
+              value:
+                config:
+                  root_id: stats_outbound
+                  vm_config:
+                    vm_id: tcp_stats_outbound
+                    runtime: envoy.wasm.runtime.null
+                    code:
+                      local:
+                        inline_string: "envoy.wasm.stats"
+                  configuration:
+                    "@type": "type.googleapis.com/google.protobuf.StringValue"
+                    value: "{\"debug\":\"false\",\"stat_prefix\":\"istio\"}"
+          - name: envoy.filters.network.tcp_proxy
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+              access_log:
+                - name: envoy.access_loggers.file
+                  typed_config:
+                    "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog"
+                    path: /dev/stdout
+                    format: "[%START_TIME%] [UDS] DRA=%DOWNSTREAM_REMOTE_ADDRESS% UH=%UPSTREAM_HOST% ULA=%UPSTREAM_LOCAL_ADDRESS% [SNI=%REQUESTED_SERVER_NAME%]\" - %RESPONSE_CODE% - %RESPONSE_FLAGS% \n"
+              cluster: outbound|3128||external-forward-proxy.external.svc.cluster.local
+              stat_prefix: outbound|3128||external-forward-proxy.external.svc.cluster.local
+              tunneling_config:
+                hostname: "%REQUESTED_SERVER_NAME%:443"
+        traffic_direction: OUTBOUND
+  - applyTo: CLUSTER
+    patch:
+      operation: ADD
+      value:
+        name: outbound|443||www.wikipedia.org
+        connect_timeout: 0.25s
+        type: STATIC
+        load_assignment:
+          cluster_name: outbound|443||www.wikipedia.org
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  pipe:
+                    path: "@/tunnel-0.0.0.0_443"
+        transport_socket:
+          name: envoy.transport_sockets.tls
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            sni: www.wikipedia.org

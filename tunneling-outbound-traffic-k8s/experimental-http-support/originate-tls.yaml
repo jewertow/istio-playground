@@ -1,0 +1,10 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: originate-tls-for-outbound-traffic-to-external-forward-proxy
+spec:
+  host: external-forward-proxy.external.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: SIMPLE
+      sni: external-forward-proxy.external.svc.cluster.local

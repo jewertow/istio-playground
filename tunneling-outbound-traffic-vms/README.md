@@ -23,7 +23,7 @@ mv envoy infra/forward-proxy
 ```sh
 wget -O k0s "https://github.com/k0sproject/k0s/releases/download/v1.24.4+k0s.0/k0s-v1.24.4+k0s.0-amd64"
 chmod u+x k0s
-mv k0s infra/k8s
+mv k0s infra/k8s/k0s
 ```
 
 #### 4. Nginx configurations
@@ -44,8 +44,27 @@ export KUBECONFIG=~/.kube/config-vagrant-k0s
 
 #### 7. Install Istio
 ```sh
-istioctl install -y \
-    --set profile=demo \
-    --set meshConfig.accessLogFile=/dev/stdout \
-    --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY
+istioctl operator init
+kubectl apply -f - <<EOF
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  namespace: istio-system
+  name: istio-tunneling-outbound-traffic
+spec:
+  profile: minimal
+  components:
+    egressGateways:
+    - name: istio-egressgateway
+      enabled: true
+  meshConfig:
+    accessLogFile: "/dev/stdout"
+    defaultConfig:
+      # required to allocate static IP for a service entry
+      proxyMetadata:
+        ISTIO_META_DNS_CAPTURE: "true"
+        ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+    outboundTrafficPolicy:
+      mode: REGISTRY_ONLY
+EOF
 ```

@@ -5,6 +5,8 @@ metadata:
 spec:
   hosts:
   - external-forward-proxy.corp.net
+  endpoints:
+  - address: 192.168.56.20
   location: MESH_EXTERNAL
   ports:
   - number: 3080
@@ -13,7 +15,7 @@ spec:
   - number: 3443
     name: https
     protocol: HTTPS
-  resolution: DNS
+  resolution: STATIC
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry

@@ -49,15 +49,19 @@ spec:
               value:
                 config:
                   root_id: stats_outbound
-                  vm_config:
-                    vm_id: tcp_stats_outbound
-                    runtime: envoy.wasm.runtime.null
-                    code:
-                      local:
-                        inline_string: "envoy.wasm.stats"
                   configuration:
                     "@type": "type.googleapis.com/google.protobuf.StringValue"
-                    value: "{\"debug\":\"false\",\"stat_prefix\":\"istio\"}"
+                    value: |
+                      {
+                        "debug": "false",
+                        "stat_prefix": "istio"
+                      }
+                  vm_config:
+                    code:
+                      local:
+                        inline_string: envoy.wasm.stats
+                    runtime: envoy.wasm.runtime.null
+                    vm_id: tcp_stats_outbound
           - name: envoy.filters.network.tcp_proxy
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy

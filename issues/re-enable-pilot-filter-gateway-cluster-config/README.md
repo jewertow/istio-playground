@@ -1,6 +1,6 @@
-### Re-enable PILOT_FILTER_GATEWAY_CLUSTER_CONFIG #29131
+## Re-enable PILOT_FILTER_GATEWAY_CLUSTER_CONFIG #29131
 
-#### Reproduce issue
+### Reproduce issue
 
 1. Create test kubernetes cluster:
 ```shell
@@ -131,13 +131,20 @@ cat output.log | grep 503 | wc -l
 ```
 Output should be greater than 0. Otherwise, run update loop again.
 
+### Workaround 1 - does not work
+
 Workarounds below try to update virtual services without removing old hosts,
 so that proxy is never in a situation that it lacks a cluster or an endpoint
 and does not return 503.
 
-Unfortunately both workarounds do not solve the problem. Outputs show that 503 still occurs.
+Both workarounds do not solve the problem. Outputs show that 503 is still returned.
 
-Workaround 1:
+A potential cause of getting 503 is that routes are switched to new clusters immediately,
+so new clusters may not be [warmed](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/cluster_manager) yet.
+
+Outputs usually contain 1-2 "503", so the downtime is ~2%.
+
+#### Workaround with matching rule:
 ```shell
 for x in {0..10}
 do
@@ -179,7 +186,7 @@ done
 cat output.log | grep 503 | wc -l
 ```
 
-Workaround 2:
+#### Workaround with weighted destinations:
 ```shell
 for x in {0..10}
 do

@@ -143,21 +143,26 @@ of the new destination or the cluster is not [warmed](https://www.envoyproxy.io/
 
 Istio enforces the following order of XDS updates: CDS -> EDS -> LDS -> RDS.
 
-Taking the above into account, I expected that updating VirtualServices in a way that does not replace
-destinations in one operation should avoid 503s, because clusters will be sent first to a proxy
-and there will be no scenario in which a route references a cluster that it does not know.
+Taking the above into account, I expected that updating VirtualServices in a way that
+does not remove and add clusters in a single operation should reduce risk of returning 503,
+because clusters will be sent first to a proxy and there will be no scenario that
+a route references a non-existing cluster.
 
-Unfortunately this assumption didn't fix the problem and 503s are still returned during updates.
+In practice, it turns out that it's probably impossible to determine that a cluster
+is ready to be removed at a given moment, because sometimes requests are dispatched
+to a cluster that is no longer referenced by any route. This requires more investigation
+of Envoy's Router and connection pool implementation.
 
-None of the workarounds below solve gateway errors.
+**Important: none of the workarounds below can really solve gateway errors.**
 
-### Workaround 1 - does not work
+### Workaround 1
 
 The first and the simples approach tries to update gateway configuration by updating a virtual service
 so that it does not remove the old host, but switch traffic to the new host without removing the old one.
 
-A potential cause of getting 503 is that routes are switched to new clusters immediately,
-so new clusters may not be [warmed](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/cluster_manager) yet.
+A potential cause of getting 503 is that routes are switched to new clusters too quickly,
+so subsequent updates override configurations that didn't become ready, so as a result
+routes reference removed clusters.
 
 ```shell
 export RED="\033[0;31m"
@@ -212,15 +217,24 @@ done
 ### Workaround 2 - does not work
 
 This workaround updates configuration in 2 steps:
-1. New route is added, but traffic is not routed there.
-   The goal is to push clusters by CDS, warm them by Envoy and make them available for routes.
-   Additionally, test requests are sent to make sure that the new route is ready to serve traffic.
-2. Remove old route and switch traffic to the new one.
+1. New route is added and traffic is switched to this route immediately.
+   The old route should not receive traffic, because has matching rule that effectively
+   excludes it from receiving traffic.
+2. Verify that the new cluster already receives traffic and remove the old route.
+
+To make this solution more reliable and reduce risk of removing a cluster in use,
+health checks and verification of receiving traffic by the new cluster are performed
+between the steps above.
 
 This approach may seem to solve the problem, because before removal of the old route,
-health check and test request were performed, but even though 503 are still returned.
-The reason of the gateway error may be that active connections to an old cluster exist
-and in case of removal of that cluster, 503 is returned until route switched to a new cluster.
+verification of receiving traffic by the new clusters is performed, so theoretically
+there is no risk to remove the old one. In practice, 503 is still returned, and I guess
+it's because some internal connection pool still uses the old cluster,
+but this hypothesis needs more investigation of the Router's code base.
+
+It's important to note that there is no risk in switching traffic from cluster A to B immediately,
+because CDS pauses XDS stream until clusters are not [warmed](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/cluster_manager).
+So cluster warming is not a user's concern.
 
 ```shell
 export RED="\033[0;31m"
@@ -247,18 +261,18 @@ spec:
   # The new host should not receive traffic, but is added to the configuration to be warmed.
   - match:
     - headers:
-        warming:
-          exact: "true"
+        foo:
+          exact: "bar"
     route:
     - destination:
-        host: test-app-$curr.default.svc.cluster.local
+        host: test-app-$prev.default.svc.cluster.local
         port:
           number: 5678
   # Route all remaining traffic to an old host.
   # The old host should receive traffic until the new one is warmed.
   - route:
     - destination:
-        host: test-app-$prev.default.svc.cluster.local
+        host: test-app-$curr.default.svc.cluster.local
         port:
           number: 5678
 EOF
@@ -272,19 +286,21 @@ EOF
 
   # Verify health of the new cluster test-app-$i until it's healthy.
   # Successful health check means that cluster was warmed,
-  # i.e. initial DNS resolution and health check succeeded.
-  while [ "$(kubectl exec $(kubectl get pods -l istio=ingressgateway -n istio-system -o jsonpath='{.items[].metadata.name}') -n istio-system -c istio-proxy -- curl localhost:15000/clusters | grep test-app-$curr | grep -q healthy)" -eq "1" ]
+  # i.e. initial DNS resolution and internal health check succeeded.
+  until $(kubectl exec $(kubectl get pods -l istio=ingressgateway -n istio-system -o jsonpath='{.items[].metadata.name}') -n istio-system -c istio-proxy -- curl localhost:15000/clusters | grep test-app-$curr | grep -q healthy)
   do
-    echo "cluster test-app-$curr is not healthy" >> health-checks.log
+    echo "Waiting until cluster test-app-$curr is healthy" >> health-checks.log
     sleep 1
   done
-  
-  # Additionally try to connect to the new host.
-  # Even if cluster was warmed by cluster manager, listener may not be warmed yet.
-  # This step verifies that the route is ready to serve traffic.
-  until curl -s -f -o /dev/null -H "Host: test-echo.com" -H "warming: true" http://localhost:8080/
+
+  # Verify that traffic is already served by the new cluster,
+  # to make sure that the old cluster is no longer needed.
+  # IMPORTANT: In fact it doesn't matter and sometimes 503 occurs.
+  # I guess it's because Envoy's internals and some connection pool
+  # is still alive so requests are served to the old cluster.
+  until $(kubectl logs -l istio=ingressgateway -n istio-system -c istio-proxy --tail=3 | grep -q test-app-$curr)
   do
-    echo "Warming test-app-$curr..." >> warming.log
+    echo "Waiting until traffic is served by the cluster test-app-$curr" >> cluster-traffic.log
     sleep 1
   done
 
@@ -331,7 +347,8 @@ In contrary to the previous approach, this solution does not remove unused host 
 but only after switching traffic to a new host and ensuring that there is no active connection
 to the old host.
 
-This approach makes update work and gateway errors no longer occur.
+I never got errors using this workaround, but probably thanks to luck.
+Anyway, it proves that after some time, clusters can be safely removed.
 
 ```shell
 export RED="\033[0;31m"
@@ -384,7 +401,7 @@ EOF
   # Verify health of the new cluster test-app-$i until it's healthy.
   # Successful health check means that cluster was warmed,
   # i.e. initial DNS resolution and health check succeeded.
-  while [ "$(kubectl exec $(kubectl get pods -l istio=ingressgateway -n istio-system -o jsonpath='{.items[].metadata.name}') -n istio-system -c istio-proxy -- curl localhost:15000/clusters | grep test-app-$curr | grep -q healthy)" -eq "1" ]
+  until $(kubectl exec $(kubectl get pods -l istio=ingressgateway -n istio-system -o jsonpath='{.items[].metadata.name}') -n istio-system -c istio-proxy -- curl localhost:15000/clusters | grep test-app-$curr | grep -q healthy)
   do
     echo "cluster test-app-$curr is not healthy" >> health-check.log
     sleep 1
@@ -438,9 +455,9 @@ EOF
   fi
   
   # Wait for deactivating connections to the previous cluster.
-  while [ "$(kubectl exec $(kubectl get pods -l istio=ingressgateway -n istio-system -o jsonpath='{.items[].metadata.name}') -n istio-system -c istio-proxy -- curl localhost:15000/clusters | grep test-app-$prev | grep -q cx_active::0)" -eq "1" ]
+  until $(kubectl exec $(kubectl get pods -l istio=ingressgateway -n istio-system -o jsonpath='{.items[].metadata.name}') -n istio-system -c istio-proxy -- curl localhost:15000/clusters | grep test-app-$prev | grep -q rq_active::0)
   do
-    echo "Waiting for deactivating connections to the previous cluster" >> cx_active.log
+    echo "Waiting until no active requests are reported" >> rq_active.log
     sleep 1
   done
 

@@ -245,7 +245,10 @@ do
   prev=$((8080 + (i-1)%10))
   curr=$((8080 + i%10))
 
-  # 1st update - add new destination to the configuration, but use only the old one.
+  # 1st update - add a new cluster and switch traffic to it.
+  # The old cluster is not removed until the new one serves traffic.
+  # A new route should not be loaded until CDS response is processed
+  # and the new cluster is warmed.
   kubectl apply -n default -f - <<EOF
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
@@ -257,8 +260,9 @@ spec:
   hosts:
   - test-echo.com
   http:
-  # Match an unused header and route traffic to a new host.
-  # The new host should not receive traffic, but is added to the configuration to be warmed.
+  # Match an unused header and route traffic to the old host to effectively disable
+  # it without removing it from the proxy configuration.
+  # The old host should not receive traffic after loading this route configuration.
   - match:
     - headers:
         foo:
@@ -268,21 +272,13 @@ spec:
         host: test-app-$prev.default.svc.cluster.local
         port:
           number: 5678
-  # Route all remaining traffic to an old host.
-  # The old host should receive traffic until the new one is warmed.
+  # Route all remaining traffic to the new host.
   - route:
     - destination:
         host: test-app-$curr.default.svc.cluster.local
         port:
           number: 5678
 EOF
-  gateway_err_count=$(cat output.log | grep 503 | wc -l)
-  if [[ $gateway_err_count -gt 0 ]]
-  then
-    echo "${RED}1st update [$prev, $curr] - errors: $gateway_err_count.${RESET}"
-  else
-    echo "1st update [$prev, $curr] - no errors."
-  fi
 
   # Verify health of the new cluster test-app-$i until it's healthy.
   # Successful health check means that cluster was warmed,
@@ -303,6 +299,15 @@ EOF
     echo "Waiting until traffic is served by the cluster test-app-$curr" >> cluster-traffic.log
     sleep 1
   done
+  
+  gateway_err_count=$(cat output.log | grep 503 | wc -l)
+  if [[ $gateway_err_count -gt 0 ]]
+  then
+    echo "${RED}1st update [$prev, $curr] - errors: $gateway_err_count.${RESET}"
+    sleep 3600
+  else
+    echo "1st update [$prev, $curr] - no errors."
+  fi
 
   # 2nd update - switch traffic to the new host and remove the old one.
   kubectl apply -n default -f - <<EOF
@@ -323,10 +328,18 @@ spec:
           number: 5678
 EOF
 
+  # Wait until the old cluster is removed
+  while $(kubectl exec $(kubectl get pods -l istio=ingressgateway -n istio-system -o jsonpath='{.items[].metadata.name}') -n istio-system -c istio-proxy -- curl localhost:15000/clusters | grep -q test-app-$prev);
+  do
+    echo "Waiting until cluster test-app-$prev is removed" >> prev-cluster.log
+    sleep 1
+  done
+  
   gateway_err_count=$(cat output.log | grep 503 | wc -l)
   if [[ $gateway_err_count -gt 0 ]]
   then
     echo "${RED}2nd update [$prev, $curr] - errors: $gateway_err_count.${RESET}"
+    sleep 3600
   else
     echo "2nd update [$prev, $curr] - no errors."
   fi

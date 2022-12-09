@@ -9,14 +9,13 @@ kind create cluster --name test
 
 2. Install Istio:
 ```shell
-kubectl label namespace default istio-injection=enabled
 istioctl install -y -n istio-system -f - <<EOF
 apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
 metadata:
   name: test
 spec:
-  profile: default
+  profile: minimal
   components:
     pilot:
       k8s:
@@ -25,11 +24,57 @@ spec:
           value: "true"
   meshConfig:
     accessLogFile: /dev/stdout
+  values:
+    global:
+      proxy:
+        tracer: none
 EOF
 ```
 
-3. Create 10 services:
+3. Deploy custom ingress gateway:
 ```shell
+kubectl apply -n istio-system -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: istio-ingressgateway
+spec:
+ type: LoadBalancer
+ selector:
+   istio: ingressgateway
+ ports:
+ - port: 80
+   name: http
+ - port: 443
+   name: https
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: istio-ingressgateway
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  template:
+    metadata:
+      annotations:
+        inject.istio.io/templates: gateway
+        sidecar.istio.io/logLevel: debug
+        sidecar.istio.io/rewriteAppHTTPProbers: "false"
+      labels:
+        istio: ingressgateway
+        sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+      - name: istio-proxy
+        image: auto 
+EOF
+```
+
+5. Create 10 services:
+```shell
+kubectl label namespace default istio-injection=enabled
 for i in {8080..8089}
 do
   kubectl apply -n default -f - <<EOF
@@ -230,22 +275,22 @@ spec:
           number: 5678
 EOF
 
-  # Verify health of the new cluster test-app-$i until it's healthy.
-  # Successful health check means that cluster was warmed,
-  # i.e. initial DNS resolution and internal health check succeeded.
-  until $(kubectl exec $(kubectl get pods -l istio=ingressgateway -n istio-system -o jsonpath='{.items[].metadata.name}') -n istio-system -c istio-proxy -- curl localhost:15000/clusters | grep test-app-$curr | grep -q healthy)
-  do
-    echo "Waiting until cluster test-app-$curr is healthy" >> health-checks.log
-    sleep 1
-  done
-
-  # Verify that traffic is already served by the new cluster,
-  # to make sure that the old cluster is no longer needed.
-  until $(kubectl logs -l istio=ingressgateway -n istio-system -c istio-proxy --tail=3 | grep -q test-app-$curr)
-  do
-    echo "Waiting until traffic is served by the cluster test-app-$curr" >> cluster-traffic.log
-    sleep 1
-  done
+#  # Verify health of the new cluster test-app-$i until it's healthy.
+#  # Successful health check means that cluster was warmed,
+#  # i.e. initial DNS resolution and internal health check succeeded.
+#  until $(kubectl exec $(kubectl get pods -l istio=ingressgateway -n istio-system -o jsonpath='{.items[].metadata.name}') -n istio-system -c istio-proxy -- curl localhost:15000/clusters | grep test-app-$curr | grep -q healthy)
+#  do
+#    echo "Waiting until cluster test-app-$curr is healthy" >> health-checks.log
+#    sleep 1
+#  done
+#
+#  # Verify that traffic is already served by the new cluster,
+#  # to make sure that the old cluster is no longer needed.
+#  until $(kubectl logs -l istio=ingressgateway -n istio-system -c istio-proxy --since=3s | grep -q test-app-$curr)
+#  do
+#    echo "Waiting until traffic is served by the cluster test-app-$curr" >> cluster-traffic.log
+#    sleep 1
+#  done
   
   gateway_err_count=$(cat output.log | grep 503 | wc -l)
   if [[ $gateway_err_count -gt 0 ]]
@@ -292,6 +337,167 @@ EOF
   fi
 done
 ```
+
+Logs from the moment when 503 was returned:
+```log
+2022-12-08T13:11:45.623044Z     debug   envoy client    [C5301] response complete
+2022-12-08T13:11:45.623342Z     debug   envoy pool      [C5301] response complete
+2022-12-08T13:11:45.623358Z     debug   envoy pool      [C5301] destroying stream: 0 remaining
+2022-12-08T13:11:45.629521Z     debug   envoy connection        [C5215] remote close
+2022-12-08T13:11:45.629549Z     debug   envoy connection        [C5215] closing socket: 0
+2022-12-08T13:11:45.629612Z     debug   envoy conn_handler      [C5215] adding to cleanup list
+2022-12-08T13:11:45.631468Z     debug   envoy config    Received gRPC message for type.googleapis.com/envoy.config.cluster.v3.Cluster at version 2022-12-08T13:11:45Z/222
+2022-12-08T13:11:45.631489Z     debug   envoy config    Pausing discovery requests for type.googleapis.com/envoy.config.cluster.v3.Cluster (previous count 0)
+2022-12-08T13:11:45.631750Z     debug   envoy config    Pausing discovery requests for type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment (previous count 0)
+2022-12-08T13:11:45.631758Z     debug   envoy config    Pausing discovery requests for type.googleapis.com/envoy.config.endpoint.v3.LbEndpoint (previous count 0)
+2022-12-08T13:11:45.631759Z     debug   envoy config    Pausing discovery requests for type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret (previous count 0)
+2022-12-08T13:11:45.631764Z     info    envoy upstream  cds: add 3 cluster(s), remove 5 cluster(s)
+2022-12-08T13:11:45.631948Z     debug   envoy upstream  cds: add/update cluster 'outbound|5678||test-app-8087.default.svc.cluster.local' skipped
+2022-12-08T13:11:45.632172Z     debug   envoy init      added shared target SdsApi default to init manager Cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.632184Z     debug   envoy init      added shared target SdsApi ROOTCA to init manager Cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.632557Z     debug   envoy config    Secret is updated.
+2022-12-08T13:11:45.632901Z     debug   envoy config    Secret is updated.
+2022-12-08T13:11:45.633403Z     debug   envoy upstream    upstream filter #0:
+2022-12-08T13:11:45.633411Z     debug   envoy upstream      name: istio.metadata_exchange
+2022-12-08T13:11:45.633436Z     debug   envoy config        upstream http filter #0
+2022-12-08T13:11:45.633449Z     debug   envoy config          name: envoy.filters.http.upstream_codec
+2022-12-08T13:11:45.633469Z     debug   envoy config        config: {"@type":"type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec"}
+2022-12-08T13:11:45.633518Z     debug   envoy config    Pausing discovery requests for type.googleapis.com/envoy.config.cluster.v3.Cluster (previous count 1)
+2022-12-08T13:11:45.633524Z     debug   envoy upstream  add/update cluster outbound|5678||test-app-8088.default.svc.cluster.local starting warming
+2022-12-08T13:11:45.633529Z     debug   envoy config    gRPC mux addWatch for type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+2022-12-08T13:11:45.633531Z     debug   envoy upstream  cds: add/update cluster 'outbound|5678||test-app-8088.default.svc.cluster.local'
+2022-12-08T13:11:45.633548Z     debug   envoy upstream  cds: add/update cluster 'BlackHoleCluster' skipped
+2022-12-08T13:11:45.633555Z     info    envoy upstream  cds: added/updated 1 cluster(s), skipped 2 unmodified cluster(s)
+2022-12-08T13:11:45.633558Z     debug   envoy config    Decreasing pause count on discovery requests for type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment (previous count 1)
+2022-12-08T13:11:45.633562Z     debug   envoy config    Resuming discovery requests for type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+2022-12-08T13:11:45.633584Z     debug   envoy config    Decreasing pause count on discovery requests for type.googleapis.com/envoy.config.endpoint.v3.LbEndpoint (previous count 1)
+2022-12-08T13:11:45.633588Z     debug   envoy config    Decreasing pause count on discovery requests for type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret (previous count 1)
+2022-12-08T13:11:45.633596Z     debug   envoy config    gRPC config for type.googleapis.com/envoy.config.cluster.v3.Cluster accepted with 3 resources with version 2022-12-08T13:11:45Z/222
+2022-12-08T13:11:45.633640Z     debug   envoy config    Decreasing pause count on discovery requests for type.googleapis.com/envoy.config.cluster.v3.Cluster (previous count 2)
+2022-12-08T13:11:45.633753Z     debug   envoy config    Received gRPC message for type.googleapis.com/envoy.config.listener.v3.Listener at version 2022-12-08T13:11:45Z/222
+2022-12-08T13:11:45.633759Z     debug   envoy config    Pausing discovery requests for type.googleapis.com/envoy.config.listener.v3.Listener (previous count 0)
+2022-12-08T13:11:45.633817Z     debug   envoy config    Pausing discovery requests for type.googleapis.com/envoy.config.route.v3.RouteConfiguration (previous count 0)
+2022-12-08T13:11:45.633821Z     debug   envoy config    Pausing discovery requests for type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret (previous count 0)
+2022-12-08T13:11:45.633824Z     debug   envoy config    begin remove listener: name=33232bdf-9162-4fd6-ac89-b9f2931c8265
+2022-12-08T13:11:45.633827Z     debug   envoy config    unknown/locked listener '33232bdf-9162-4fd6-ac89-b9f2931c8265'. no remove
+2022-12-08T13:11:45.633828Z     debug   envoy config    begin remove listener: name=f35c22a5-22cc-4c1b-a08f-645abec8b7dc
+2022-12-08T13:11:45.633830Z     debug   envoy config    unknown/locked listener 'f35c22a5-22cc-4c1b-a08f-645abec8b7dc'. no remove
+2022-12-08T13:11:45.634173Z     debug   envoy config    begin add/update listener: name=0.0.0.0_80 hash=15208284309641815325
+2022-12-08T13:11:45.634182Z     debug   envoy config    duplicate/locked listener '0.0.0.0_80'. no add/update
+2022-12-08T13:11:45.634185Z     debug   envoy upstream  lds: add/update listener '0.0.0.0_80' skipped
+2022-12-08T13:11:45.634192Z     debug   envoy config    Decreasing pause count on discovery requests for type.googleapis.com/envoy.config.route.v3.RouteConfiguration (previous count 1)
+2022-12-08T13:11:45.634194Z     debug   envoy config    Decreasing pause count on discovery requests for type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret (previous count 1)
+2022-12-08T13:11:45.634200Z     debug   envoy config    gRPC config for type.googleapis.com/envoy.config.listener.v3.Listener accepted with 1 resources with version 2022-12-08T13:11:45Z/222
+2022-12-08T13:11:45.634225Z     debug   envoy config    Decreasing pause count on discovery requests for type.googleapis.com/envoy.config.listener.v3.Listener (previous count 1)
+2022-12-08T13:11:45.634261Z     debug   envoy config    Resuming discovery requests for type.googleapis.com/envoy.config.listener.v3.Listener
+2022-12-08T13:11:45.634288Z     debug   envoy config    Received gRPC message for type.googleapis.com/envoy.config.route.v3.RouteConfiguration at version 2022-12-08T13:11:45Z/222
+2022-12-08T13:11:45.634293Z     debug   envoy config    Pausing discovery requests for type.googleapis.com/envoy.config.route.v3.RouteConfiguration (previous count 0)
+2022-12-08T13:11:45.634602Z     debug   envoy rds       rds: loading new configuration: config_name=http.80 hash=15915126730005602314
+2022-12-08T13:11:45.634720Z     debug   envoy config    gRPC config for type.googleapis.com/envoy.config.route.v3.RouteConfiguration accepted with 1 resources with version 2022-12-08T13:11:45Z/222
+2022-12-08T13:11:45.634821Z     debug   envoy config    Decreasing pause count on discovery requests for type.googleapis.com/envoy.config.route.v3.RouteConfiguration (previous count 1)
+2022-12-08T13:11:45.634827Z     debug   envoy config    Resuming discovery requests for type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+2022-12-08T13:11:45.635404Z     debug   envoy conn_handler      [C5332] new connection from 127.0.0.1:35172
+2022-12-08T13:11:45.635449Z     debug   envoy http      [C5332] new stream
+2022-12-08T13:11:45.635490Z     debug   envoy http      [C5332][S6084629102113665450] request headers complete (end_stream=true):
+':authority', 'test-echo.com'
+':path', '/test'
+':method', 'GET'
+'user-agent', 'curl/7.79.1'
+'accept', '*/*'
+
+2022-12-08T13:11:45.635499Z     debug   envoy http      [C5332][S6084629102113665450] request end stream
+2022-12-08T13:11:45.635518Z     debug   envoy connection        [C5332] current connecting state: false
+2022-12-08T13:11:45.635522Z     debug   envoy config    Received gRPC message for type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment at version 2022-12-08T13:11:45Z/222
+2022-12-08T13:11:45.635529Z     debug   envoy config    Pausing discovery requests for type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment (previous count 0)
+2022-12-08T13:11:45.635594Z     debug   envoy config    Pausing discovery requests for type.googleapis.com/envoy.config.endpoint.v3.LbEndpoint (previous count 0)
+2022-12-08T13:11:45.635594Z     debug   envoy filter    cannot find cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635633Z     debug   envoy router    [C5332][S6084629102113665450] unknown cluster 'outbound|5678||test-app-8088.default.svc.cluster.local'
+2022-12-08T13:11:45.635640Z     debug   envoy http      [C5332][S6084629102113665450] Sending local reply with details cluster_not_found
+2022-12-08T13:11:45.635643Z     debug   envoy upstream  transport socket match, socket tlsMode-istio selected for host with address 10.244.0.16:5678
+2022-12-08T13:11:45.635654Z     debug   envoy upstream  EDS hosts or locality weights changed for cluster: outbound|5678||test-app-8088.default.svc.cluster.local current hosts 0 priority 0
+2022-12-08T13:11:45.635669Z     debug   envoy http      [C5332][S6084629102113665450] encoding headers via codec (end_stream=true):
+':status', '503'
+'date', 'Thu, 08 Dec 2022 13:11:45 GMT'
+'server', 'istio-envoy'
+
+2022-12-08T13:11:45.635672Z     debug   envoy upstream  initializing Secondary cluster outbound|5678||test-app-8088.default.svc.cluster.local completed
+2022-12-08T13:11:45.635676Z     debug   envoy init      init manager Cluster outbound|5678||test-app-8088.default.svc.cluster.local initializing
+2022-12-08T13:11:45.635679Z     debug   envoy init      init manager Cluster outbound|5678||test-app-8088.default.svc.cluster.local initializing shared target SdsApi default
+2022-12-08T13:11:45.635681Z     debug   envoy init      shared target SdsApi default initialized, notifying init manager Cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635684Z     debug   envoy init      init manager Cluster outbound|5678||test-app-8088.default.svc.cluster.local initializing shared target SdsApi ROOTCA
+2022-12-08T13:11:45.635686Z     debug   envoy init      shared target SdsApi ROOTCA initialized, notifying init manager Cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635688Z     debug   envoy init      init manager Cluster outbound|5678||test-app-8088.default.svc.cluster.local initialized, notifying ClusterImplBase
+2022-12-08T13:11:45.635691Z     debug   envoy upstream  warming cluster outbound|5678||test-app-8088.default.svc.cluster.local complete
+2022-12-08T13:11:45.635699Z     debug   envoy config    Decreasing pause count on discovery requests for type.googleapis.com/envoy.config.cluster.v3.Cluster (previous count 1)
+2022-12-08T13:11:45.635702Z     debug   envoy config    Resuming discovery requests for type.googleapis.com/envoy.config.cluster.v3.Cluster
+2022-12-08T13:11:45.635734Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635735Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635746Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635753Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635760Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635763Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.635765Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.635769Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.635772Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635779Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635780Z     debug   envoy config    Decreasing pause count on discovery requests for type.googleapis.com/envoy.config.endpoint.v3.LbEndpoint (previous count 1)
+2022-12-08T13:11:45.635785Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635788Z     debug   envoy config    gRPC config for type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment accepted with 1 resources with version 2022-12-08T13:11:45Z/222
+2022-12-08T13:11:45.635789Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.635790Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.635795Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.635801Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635737Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635811Z     debug   envoy config    Decreasing pause count on discovery requests for type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment (previous count 1)
+2022-12-08T13:11:45.635811Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635815Z     debug   envoy config    Resuming discovery requests for type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+2022-12-08T13:11:45.635739Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.635765Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.635823Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.635829Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.635823Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.635774Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.635812Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.644074Z     debug   envoy connection        [C5216] remote close
+2022-12-08T13:11:45.644103Z     debug   envoy connection        [C5216] closing socket: 0
+2022-12-08T13:11:45.644176Z     debug   envoy conn_handler      [C5216] adding to cleanup list
+2022-12-08T13:11:45.651814Z     debug   envoy connection        [C5217] remote close
+2022-12-08T13:11:45.651824Z     debug   envoy connection        [C5217] closing socket: 0
+2022-12-08T13:11:45.651876Z     debug   envoy conn_handler      [C5217] adding to cleanup list
+2022-12-08T13:11:45.652424Z     debug   envoy upstream  adding TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local
+2022-12-08T13:11:45.652442Z     debug   envoy upstream  membership update for TLS cluster outbound|5678||test-app-8088.default.svc.cluster.local added 1 removed 0
+2022-12-08T13:11:45.662496Z     debug   envoy connection        [C5218] remote close
+2022-12-08T13:11:45.662510Z     debug   envoy connection        [C5218] closing socket: 0
+2022-12-08T13:11:45.662548Z     debug   envoy conn_handler      [C5218] adding to cleanup list
+2022-12-08T13:11:45.663066Z     debug   envoy conn_handler      [C5333] new connection from 127.0.0.1:35174
+2022-12-08T13:11:45.663101Z     debug   envoy http      [C5333] new stream
+2022-12-08T13:11:45.663128Z     debug   envoy http      [C5333][S8651892794354560641] request headers complete (end_stream=true):
+':authority', 'test-echo.com'
+':path', '/test'
+':method', 'GET'
+'user-agent', 'curl/7.79.1'
+'accept', '*/*'
+```
+
+These logs show the following order of events:
+1. Cluster test-app-8087 is serving requests...
+2. Request HTTP/1.1 /test
+3. Response 200 OK
+4. CDS added test-app-8087
+5. XDS client paused requesting Clusters, ClusterLoadAssignments, LbEndpoints and Secrets.
+6. Cluster test-app-8088 started being warmed.
+7. XDS client resumed requesting ClusterLoadAssignment.
+8. LDS received new configuration.
+9. RDS received new configuration.
+10. New route was loaded!
+11. Request HTTP/1.1 /test
+12. Response 503, because cluster test-app-8088 is not yet warmed.
+13. EDS receives ClusterLoadAssignments.
+14. Cluster test-app-8088 is warmed.
+15. Next requests succeed.
+
+The order of messages above means that pausing CDS/EDS and LDS/RDS are performed independently, so
+Istio should not send LDS and RDS until received ACK on ClusterLoadAssignment (EDS).
 
 ### Workaround 2
 

@@ -469,7 +469,7 @@ These logs show the following order of events:
 1. Cluster test-app-8087 is serving requests...
 2. Request HTTP/1.1 /test
 3. Response 200 OK
-4. CDS added test-app-8087
+4. CDS added test-app-8088
 5. XDS client paused requesting Clusters, ClusterLoadAssignments, LbEndpoints and Secrets.
 6. Cluster test-app-8088 started being warmed.
 7. XDS client resumed requesting ClusterLoadAssignment.

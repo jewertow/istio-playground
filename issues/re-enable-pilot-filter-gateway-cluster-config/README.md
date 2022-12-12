@@ -275,23 +275,7 @@ spec:
           number: 5678
 EOF
 
-#  # Verify health of the new cluster test-app-$i until it's healthy.
-#  # Successful health check means that cluster was warmed,
-#  # i.e. initial DNS resolution and internal health check succeeded.
-#  until $(kubectl exec $(kubectl get pods -l istio=ingressgateway -n istio-system -o jsonpath='{.items[].metadata.name}') -n istio-system -c istio-proxy -- curl localhost:15000/clusters | grep test-app-$curr | grep -q healthy)
-#  do
-#    echo "Waiting until cluster test-app-$curr is healthy" >> health-checks.log
-#    sleep 1
-#  done
-#
-#  # Verify that traffic is already served by the new cluster,
-#  # to make sure that the old cluster is no longer needed.
-#  until $(kubectl logs -l istio=ingressgateway -n istio-system -c istio-proxy --since=3s | grep -q test-app-$curr)
-#  do
-#    echo "Waiting until traffic is served by the cluster test-app-$curr" >> cluster-traffic.log
-#    sleep 1
-#  done
-  
+  sleep 1
   gateway_err_count=$(cat output.log | grep 503 | wc -l)
   if [[ $gateway_err_count -gt 0 ]]
   then
@@ -337,6 +321,8 @@ EOF
   fi
 done
 ```
+
+### Debugging results
 
 Logs from the moment when 503 was returned:
 ```log

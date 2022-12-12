@@ -482,8 +482,14 @@ These logs show the following order of events:
 14. Cluster test-app-8088 is warmed.
 15. Next requests succeed.
 
-The order of messages above means that pausing CDS/EDS and LDS/RDS are performed independently, so
-Istio should not send LDS and RDS until received ACK on ClusterLoadAssignment (EDS).
+The order of events shows that pausing CDS/EDS and LDS/RDS are independent processes,
+and a route may be loaded while a cluster is not warmed yet. This case is described
+in the documentation [here](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#eventual-consistency-considerations),
+and it assumes that a control plane has to send LDS after EDS. ADS is not sufficient
+in this case, because it enforces an order of responses, but not the order of requests
+that come from Envoy. There are 2 potential solutions for this problem:
+1. Changing the implementation of ADS in Istio to not send LDS response until EDS is sent.
+2. Implementing a configuration option in Envoy that pauses LDS and RDS until EDS responses are not processed.
 
 ### Workaround 2
 

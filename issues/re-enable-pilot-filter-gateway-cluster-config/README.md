@@ -25,6 +25,9 @@ spec:
           value: "true"
   meshConfig:
     accessLogFile: /dev/stdout
+    defaultConfig:
+      proxyMetadata:
+        ISTIO_DELTA_XDS: "true"
 EOF
 ```
 

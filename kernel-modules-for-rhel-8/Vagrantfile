@@ -1,0 +1,18 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  config.vm.provider :virtualbox do |vb|
+    vb.memory = 4096
+    vb.cpus = 2
+  end
+
+  config.vm.box = "ubuntu/jammy64"
+
+  config.vm.provision "file", source: "run-only-test-traffic.diff", destination: "/home/vagrant/run-only-test-traffic.diff"
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "playbook.yaml"
+  end
+
+end

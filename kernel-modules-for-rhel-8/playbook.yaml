@@ -1,0 +1,62 @@
+- name: Configure environment for Istio integration tests
+  hosts: all
+  become: true
+
+  roles:
+  - role: geerlingguy.git
+  - role: gantsign.golang
+    vars:
+      golang_version: '1.19'
+  - role: geerlingguy.docker
+    vars:
+      docker_edition: 'ce'
+      docker_install_compose: false
+  - role: andrewrothstein.kind
+  - role: andrewrothstein.kubectl
+  - role: andrewrothstein.jq
+
+  tasks:
+  # enable required kernel modules
+  - community.general.modprobe:
+      name: br_netfilter
+  - community.general.modprobe:
+      name: ip6table_mangle
+  - community.general.modprobe:
+      name: ip6table_nat
+  - community.general.modprobe:
+      name: ip6table_raw
+  - community.general.modprobe:
+      name: iptable_mangle
+  - community.general.modprobe:
+      name: iptable_nat
+  - community.general.modprobe:
+      name: iptable_raw
+  - community.general.modprobe:
+      name: xt_REDIRECT
+  - community.general.modprobe:
+      name: xt_connmark
+  - community.general.modprobe:
+      name: xt_conntrack
+  - community.general.modprobe:
+      name: xt_mark
+  - community.general.modprobe:
+      name: xt_owner
+  - community.general.modprobe:
+      name: xt_tcpudp
+
+  - name: Install Make
+    ansible.builtin.shell:
+      cmd: apt install -y make
+  - name: Download istio fork
+    ansible.builtin.shell:
+      cmd: |
+        if [ ! -d /home/vagrant/istio ]; then
+          git clone https://github.com/jewertow/upstream-istio.git /home/vagrant/istio
+          git -C /home/vagrant/istio checkout centos-stream-8
+          git -C /home/vagrant/istio apply /home/vagrant/run-only-test-traffic.diff
+          git config --global --add safe.directory /home/vagrant/istio
+        fi
+  - name: Increase default limit of inotify user instances to not exhaust them during tests execution
+    ansible.posix.sysctl:
+      name: fs.inotify.max_user_instances
+      value: '512'

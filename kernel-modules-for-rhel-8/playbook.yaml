@@ -52,9 +52,9 @@
       cmd: |
         if [ ! -d /home/vagrant/istio ]; then
           git clone https://github.com/jewertow/upstream-istio.git /home/vagrant/istio
+          git config --global --add safe.directory /home/vagrant/istio
           git -C /home/vagrant/istio checkout centos-stream-8
           git -C /home/vagrant/istio apply /home/vagrant/run-only-test-traffic.diff
-          git config --global --add safe.directory /home/vagrant/istio
         fi
   - name: Increase default limit of inotify user instances to not exhaust them during tests execution
     ansible.posix.sysctl:

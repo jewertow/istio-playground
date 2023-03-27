@@ -1,0 +1,17 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: control-plane
+spec:
+  values:
+    global:
+      meshID: mesh
+      multiCluster:
+        clusterName: cluster2
+      network: network
+    pilot:
+      env:
+        PILOT_USE_ENDPOINT_SLICE: "true"
+        ENABLE_MCS_SERVICE_DISCOVERY: "true"
+        ENABLE_MCS_HOST: "true"
+

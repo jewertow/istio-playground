@@ -33,6 +33,16 @@ warn	kube	failed processing add event for ServiceImport submariner-operator/http
 
 Istio tries to find service httpbin-foo-cluster2 in namespace submariner-operator in the local cluster.
 
+5. Test traffic:
+```shell
+kubectl config use-context cluster2
+kubectl create namespace foo
+kubectl label namespace foo istio-injection=enabled
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.17/samples/sleep/sleep.yaml -n foo
+kubectl exec $(kubectl get pods -l app=sleep -n foo -o jsonpath='{.items[].metadata.name}') -n foo -c sleep -- \
+    curl -v http://httpbin.foo.svc.clusterset.local:8000/headers
+```
+
 
 ### Important to note
 

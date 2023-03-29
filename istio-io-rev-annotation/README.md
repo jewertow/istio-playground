@@ -45,7 +45,7 @@ kubectl apply -f ingress-gateway-injection.yaml -n gateway-injection
 ```
 
 Install Istio with custom revision
-```
+```shell
 # revision 1-17
 ./istioctl install -y -f - <<EOF
 apiVersion: install.istio.io/v1alpha1

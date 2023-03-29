@@ -5,5 +5,9 @@
 **/*.pcap
 **/*.tar
 
+# My Istio fork
+**/upstream-istio
+**/istioctl
+
 tunneling-outbound-traffic-vms/infra/external-app/http.conf
 tunneling-outbound-traffic-vms/infra/external-app/http2.conf

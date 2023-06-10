@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+      - name: app
+        image: nginx:1.25-alpine
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx
+        - name: app-crt
+          mountPath: /etc/pki/tls/certs
+        - name: app-key
+          mountPath: /etc/pki/tls/private
+        - name: var-log
+          mountPath: /var/log/nginx
+      volumes:
+      - name: app-conf
+        configMap:
+          name: app-conf
+      - name: app-crt
+        configMap:
+          name: app-crt
+      - name: app-key
+        configMap:
+          name: app-key
+      - name: var-log
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+spec:
+  selector:
+    app: app
+  ports:
+  - name: tcp
+    protocol: TCP
+    port: 80
+  - name: https
+    protocol: TCP
+    port: 443

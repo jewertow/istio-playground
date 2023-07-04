@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ztunnel
+  labels:
+    app: ztunnel
+spec:
+  selector:
+    matchLabels:
+      app: ztunnel
+  template:
+    metadata:
+      labels:
+        app: ztunnel
+    spec:
+      serviceAccountName: ztunnel
+      containers:
+      - name: istio-proxy
+        image: curlimages/curl
+        command: ["/bin/sleep", "infinity"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - NET_ADMIN
+          readOnlyRootFilesystem: true
+          runAsGroup: 1337
+          runAsNonRoot: false
+          runAsUser: 0

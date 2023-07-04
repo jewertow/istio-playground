@@ -1,0 +1,2 @@
+local 10.244.2.1 dev lo table local src 10.244.2.1 uid 0 
+    cache <local> 

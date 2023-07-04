@@ -1,0 +1,30 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: istio-cni-node
+  labels:
+    k8s-app: istio-cni-node
+spec:
+  selector:
+    matchLabels:
+      k8s-app: istio-cni-node
+  template:
+    metadata:
+      labels:
+        k8s-app: istio-cni-node
+    spec:
+      hostNetwork: true
+      serviceAccountName: istio-cni
+      containers:
+      - name: install-cni
+        image: quay.io/jewertow/netlink-checker:0.1
+        securityContext:
+          runAsGroup: 0
+          runAsUser: 0
+          runAsNonRoot: false
+          privileged: true
+        env:
+        - name: IP
+          value: "127.0.0.1"
+        - name: MASK
+          value: "32"

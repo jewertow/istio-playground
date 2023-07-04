@@ -1,0 +1,7 @@
+default via 172.18.0.1 dev eth0 
+10.244.0.0/24 via 172.18.0.2 dev eth0 
+10.244.1.0/24 via 172.18.0.4 dev eth0 
+10.244.2.2 dev vethf20dde99 scope host 
+172.18.0.0/16 dev eth0 proto kernel scope link src 172.18.0.3 
+192.168.126.0/30 dev istioin proto kernel scope link src 192.168.126.1 
+192.168.127.0/30 dev istioout proto kernel scope link src 192.168.127.1 

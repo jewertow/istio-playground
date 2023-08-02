@@ -16,7 +16,7 @@ spec:
         image: nginx:1.25-alpine
         imagePullPolicy: IfNotPresent
         volumeMounts:
-        - name: nginx-conf
+        - name: app-conf
           mountPath: /etc/nginx
         - name: app-crt
           mountPath: /etc/pki/tls/certs

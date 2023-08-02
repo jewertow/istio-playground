@@ -15,7 +15,7 @@ istioctl install -y --set meshConfig.accessLogFile=/dev/stdout
 curl https://raw.githubusercontent.com/jewertow/openssl-cert-gen/master/tls.sh | sh -s - --subject="app.com"
 kubectl create configmap app-key --from-file=app.com.key
 kubectl create configmap app-crt --from-file=app.com.crt
-kubectl create configmap app-conf --from-file=app.conf
+kubectl create configmap app-conf --from-file=nginx.conf
 kubectl label namespace default istio-injection=enabled
 kubectl apply -f app.yaml
 ```

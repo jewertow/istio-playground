@@ -1,5 +1,14 @@
 ## Re-enable PILOT_FILTER_GATEWAY_CLUSTER_CONFIG #29131
 
+### TODO
+1. Try recent EDS cache:
+```yaml
+meshConfig:
+  defaultConfig:
+    runtimeValues:
+      "envoy.restart_features.use_eds_cache_for_ads": "true"
+```
+
 ### Reproduce issue
 
 1. Create test kubernetes cluster:

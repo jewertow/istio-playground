@@ -1,0 +1,17 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: listener-per-connection-buffer-limit
+spec:
+  workloadSelector:
+    labels:
+      app: file-uploader
+  configPatches:
+  - applyTo: LISTENER
+    match:
+      listener:
+        name: virtualInbound
+    patch:
+      operation: MERGE
+      value:
+        per_connection_buffer_limit_bytes: 5000000

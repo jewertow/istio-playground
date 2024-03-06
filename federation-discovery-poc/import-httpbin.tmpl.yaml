@@ -1,0 +1,30 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: import-httpbin
+spec:
+  hosts:
+  - httpbin.httpbin.svc.cluster.local
+  ports:
+  - number: 8000
+    name: http
+    protocol: HTTP
+  endpoints:
+  - address: {{.eastwestGatewayIP}}
+    ports:
+      http: 15443
+  location: MESH_INTERNAL
+  resolution: STATIC
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: istio-mtls-for-imported-httpbin
+spec:
+  host: httpbin.httpbin.svc.cluster.local
+  trafficPolicy:
+    portLevelSettings:
+    - port:
+        number: 8000
+      tls:
+        mode: ISTIO_MUTUAL

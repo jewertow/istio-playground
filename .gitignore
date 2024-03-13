@@ -4,6 +4,7 @@
 **/*.log
 **/*.pcap
 **/*.tar
+**/*.kubeconfig
 
 tunneling-outbound-traffic-vms/infra/external-app/http.conf
 tunneling-outbound-traffic-vms/infra/external-app/http2.conf

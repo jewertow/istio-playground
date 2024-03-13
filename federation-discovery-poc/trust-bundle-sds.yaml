@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trust-bundle-sds
+  labels:
+    app: trust-bundle-sds
+spec:
+  selector:
+    matchLabels:
+      app: trust-bundle-sds
+  template:
+    metadata:
+      labels:
+        app: trust-bundle-sds
+    spec:
+      containers:
+      - name: sds-server
+        image: quay.io/jewertow/trust-bundle-sds:latest
+        ports:
+        - containerPort: 15012
+        env:
+        - name: TRUST_BUNDLE
+          valueFrom:
+            configMapKeyRef:
+              name: trust-bundle
+              key: trust-bundle.pem
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trust-bundle-sds
+spec:
+  selector:
+    app: trust-bundle-sds
+  ports:
+  - protocol: TCP
+    port: 15012
+    name: grpc

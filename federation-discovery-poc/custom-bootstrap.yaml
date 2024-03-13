@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-bootstrap-for-trust-bundle-federation
+data:
+  custom_bootstrap.json: |
+    "static_resources": {
+      "clusters": [
+        {
+          "name": "trust-bundle-sds",
+          "type": "strict_dns",
+          "connect_timeout": "0.250s",
+          "lb_policy": "ROUND_ROBIN",
+          "load_assignment": {
+            "cluster_name": "trust-bundle-sds",
+            "endpoints": [{
+              "lb_endpoints": [{
+                "endpoint": {
+                  "address":{
+                    "socket_address": {
+                      "protocol": "TCP",
+                      "address": "trust-bundle-sds.istio-system.svc.cluster.local",
+                      "port_value": 15012
+                    }
+                  }
+                }
+              }]
+            }]
+          },
+          "typedExtensionProtocolOptions": {
+            "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
+                "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+                "explicitHttpConfig": {
+                    "http2ProtocolOptions": {}
+                }
+            }
+          }
+        }
+      ]
+    }

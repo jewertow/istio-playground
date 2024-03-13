@@ -49,6 +49,15 @@ spec:
         env:
         - name: ISTIO_META_REQUESTED_NETWORK_VIEW
           value: west-network
+        - name: ISTIO_BOOTSTRAP_OVERRIDE
+          value: /etc/istio/custom-bootstrap/custom_bootstrap.json
+        volumeMounts:
+        - name: custom-bootstrap
+          mountPath: /etc/istio/custom-bootstrap
+      volumes:
+      - name: custom-bootstrap
+        configMap:
+          name: custom-bootstrap-for-trust-bundle-federation
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway

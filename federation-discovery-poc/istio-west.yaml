@@ -1,15 +1,26 @@
 apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
 metadata:
-  name: default
+  name: control-plane
 spec:
-  profile: default
+  profile: minimal
+  hub: quay.io/jewertow
+  tag: custom-sds-for-root-ca
+  components:
+    pilot:
+      k8s:
+        env:
+        - name: ROOT_CA_SDS_CLUSTER_NAME
+          value: trust-bundle-sds
   meshConfig:
     accessLogFile: /dev/stdout
     defaultConfig:
       proxyMetadata:
         ISTIO_META_DNS_CAPTURE: "true"
         ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+    trustDomain: west.local
+    trustDomainAliases:
+    - east.local
   values:
     global:
       meshID: west-mesh

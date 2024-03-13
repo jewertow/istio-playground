@@ -1,8 +1,4 @@
-### Managing services in mesh federation
-
-This is a PoC of managing service discovery with `ServiceEntry` in a mesh federation.
-For simplicity, both meshes use the same root certificate and the same trust domain.
-Different root certificates and trust domains will be addressed in another document.
+### Mesh federation
 
 1. Create 2 KinD clusters:
 ```shell

@@ -8,9 +8,9 @@ and sends to relevant proxies.
 
 The process of updating Envoy proxies is performed in the following order:
 1. Event: an event from watched resources triggers istiod to update Envoy configuration.
-2. Debounce: istiod delays adding the event to the push queue for a defined time to batch and merge subsequent events for that period. Debouncing can be tunned with `PILOT_DEBOUNCE_AFTER` (100ms by default).
+2. Debounce: istiod delays adding the event to the push queue for a defined time to batch and merge subsequent events for that period. Debouncing can be tuned with `PILOT_DEBOUNCE_AFTER` (100ms by default).
 3. Add to queue: when the delay period expires, istiod adds the events to the push queue.
-4. Throttle: istiod throttles push requests from the queue and sends to connected proxies. Throttling prevents processing all events concurrently and CPU overloading. Throttling can be tunned with `PILOT_PUSH_THROTTLE`.
+4. Throttle: istiod throttles push requests from the queue and sends to connected proxies. Throttling prevents processing all events concurrently and CPU overloading. Throttling can be tuned with `PILOT_PUSH_THROTTLE`.
 5. Send Envoy config to proxies: istiod generates Envoy configs, like clusters, listeners, etc., from push requests and sends to connected proxies.
 
 ## Factors affecting istiod performance
@@ -82,11 +82,9 @@ if you see CPU spikes, pay attention to the pilot pushes - the spikes should ove
 If not, look at latency-related metrics. Before looking for problems with the platform,
 make sure that the control plane metrics don't show any anomalies.
 
-## Tunning performance
+## Performance tuning
 
 ### Scaling istiod horizontally and/or vertically
-
-#### TODO: Fix X and Y
 
 By default, istiod deployed with `ServiceMeshControlPlane` has only **10m of CPU** and **128Mi of memory**.
 These values are not universal and should be adjusted to the mesh size, rate of changes, traffic, etc.

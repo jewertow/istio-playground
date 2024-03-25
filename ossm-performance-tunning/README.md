@@ -110,8 +110,6 @@ spec:
 Scale istiod horizontally to reduce load on a single instance and split work across more instances.
 Scale istiod vertically when you observe slow processing updates and CPU spikes.
 
-#### TODO: Explain that proxies do not connect automatically to the new control plane.
-
 ### Filter out irrelevant updates
 
 In most cases, applications communicate only with some of other applications, not all of them.

@@ -44,7 +44,8 @@ Most of the work performed by istiod is CPU-intensive, so you usually need to lo
 1. `container_cpu_usage_seconds_total` - CPU usage reported by Kubernetes.
 2. `process_cpu_seconds_total` - CPU usage reported by istiod.
 This metric is visualized in Grafana as "CPU" in the dashboard "Istio Control Plane":
-![CPU](img/istiod-cpu.png)
+
+   ![CPU](img/istiod-cpu.png)
 
 ### Traffic
 
@@ -58,13 +59,13 @@ Usually, the biggest impact on performance have events, so start from reviewing 
 
 This metric is visualized in Grafana as "Pilot Pushes" in the dashboard "Istio Control Plane".
 
-![Pilot Pushes](img/pilot-pushes.png)
+   ![Pilot Pushes](img/pilot-pushes.png)
 
 2. `pilot_xds` (last value) - number of endpoints connected to this pilot using XDS.
 
 This metric is visualized in Grafana as "XDS Active Connections" in the dashboard "Istio Control Plane".
 
-![XDS Active Connections](img/xds-connections.png)
+   ![XDS Active Connections](img/xds-connections.png)
 
 There are also inbound-related metrics worth to check:
 

@@ -1,0 +1,29 @@
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  members:
+  - httpbin
+  - sleep
+  - bookinfo-1
+  - bookinfo-2
+  - bookinfo-3
+  - bookinfo-4
+  - bookinfo-5
+  - bookinfo-6
+  - bookinfo-7
+  - bookinfo-8
+  - bookinfo-9
+  - bookinfo-10
+  - bookinfo-11
+  - bookinfo-12
+  - bookinfo-13
+  - bookinfo-14
+  - bookinfo-15
+  - bookinfo-16
+  - bookinfo-17
+  - bookinfo-18
+  - bookinfo-19
+  - bookinfo-20

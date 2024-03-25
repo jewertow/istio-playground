@@ -62,11 +62,9 @@ This metric is visualized in Grafana as "Pilot Pushes" in the dashboard "Istio C
 
 2. `pilot_xds` (last value) - number of endpoints connected to this pilot using XDS.
 
-#### TODO: Change screenshot
-
 This metric is visualized in Grafana as "XDS Active Connections" in the dashboard "Istio Control Plane".
 
-![XDS Active Connections](img/pilot-pushes.png)
+![XDS Active Connections](img/xds-connections.png)
 
 There are also inbound-related metrics worth to check:
 
@@ -89,8 +87,8 @@ make sure that the control plane metrics don't show any anomalies.
 
 #### TODO: Fix X and Y
 
-By default, istiod deployed with `ServiceMeshControlPlane` has on X CPU and Y memory.
-These values are not universal and should be adjust to the mesh size, rate of changes, traffic, etc.
+By default, istiod deployed with `ServiceMeshControlPlane` has only **10m of CPU** and **128Mi of memory**.
+These values are not universal and should be adjusted to the mesh size, rate of changes, traffic, etc.
 
 ```yaml
 apiVersion: maistra.io/v2
@@ -112,6 +110,8 @@ spec:
 
 Scale istiod horizontally to reduce load on a single instance and split work across more instances.
 Scale istiod vertically when you observe slow processing updates and CPU spikes.
+
+#### TODO: Explain that proxies do not connect automatically to the new control plane.
 
 ### Filter out irrelevant updates
 
@@ -222,4 +222,278 @@ Key environment variables:
 2. `PILOT_DEBOUNCE_MAX` (10s by default) - The maximum amount of time to wait for events while debouncing. If events keep showing up with no breaks for this time, we'll trigger a push.
 3. `PILOT_PUSH_THROTTLE` (0 by default) - Limits the number of concurrent pushes allowed. On larger machines this can be increased for faster pushes. If set to 0 or unset, the max will be automatically determined based on the machine size.
 
+## Demo
 
+### Prerequisites:
+1. OpenShift cluster with 20-24 CPU and 50-60 GB of memory.
+2. Service Mesh Operator 2.4.
+
+### Setup environment and files
+Create namespaces:
+```shell
+oc new-project istio-system
+oc new-project httpbin
+oc new-project sleep
+```
+```shell
+for x in {1..20}
+do
+  oc new-project bookinfo-$x
+done
+```
+Prepare SMMR configuration with 20 bookinfo namespaces:
+```shell
+cat <<EOF >> smmr.yaml
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  members:
+  - httpbin
+  - sleep
+EOF
+for x in {1..20}
+do
+  printf "  - bookinfo-$x\n" >> smmr.yaml
+done
+```
+Prepare SMCP configs:
+```shell
+cat <<EOF >> smcp.yaml
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  addons:
+    kiali:
+      enabled: false
+    prometheus:
+      enabled: true
+    grafana:
+      enabled: true
+  gateways:
+    egress:
+      enabled: false
+  general:
+    logging:
+      componentLevels:
+        default: info
+  proxy:
+    accessLogging:
+      file:
+        name: /dev/stdout
+  tracing:
+    type: None
+  version: v2.4
+EOF
+cat <<EOF >> smcp-scaled-horizontally.yaml
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  addons:
+    kiali:
+      enabled: false
+    prometheus:
+      enabled: true
+    grafana:
+      enabled: true
+  gateways:
+    egress:
+      enabled: false
+  general:
+    logging:
+      componentLevels:
+        default: info
+  proxy:
+    accessLogging:
+      file:
+        name: /dev/stdout
+  runtime:
+    components:
+      pilot:
+        deployment:
+          replicas: 2
+  tracing:
+    type: None
+  version: v2.4
+EOF
+cat <<EOF >> smcp-scaled-horizontally-and-vertically.yaml
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  addons:
+    kiali:
+      enabled: false
+    prometheus:
+      enabled: true
+    grafana:
+      enabled: true
+  gateways:
+    egress:
+      enabled: false
+  general:
+    logging:
+      componentLevels:
+        default: info
+  proxy:
+    accessLogging:
+      file:
+        name: /dev/stdout
+  runtime:
+    components:
+      pilot:
+        container:
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1024Mi
+        deployment:
+          replicas: 2
+  tracing:
+    type: None
+  version: v2.4
+EOF
+```
+
+### Default deployment
+
+First, let's deploy SMCP with default resources:
+```shell
+oc apply -f smcp.yaml -n istio-system
+oc apply -f smmr.yaml -n istio-system
+```
+
+Wait until all components are ready and deploy 20 bookinfo apps (120 pods):
+```shell
+for x in {1..20}
+do
+  oc apply -f https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/bookinfo/platform/kube/bookinfo.yaml -n bookinfo-$x
+done
+```
+
+Now, go to Grafana -> Istio Control Plane dashboard and see the following metrics:
+1. CPU:
+
+    ![CPU](img/default-deployment/cpu.png)
+2. Pilot Pushes:
+
+    ![Pilot Pushes](img/default-deployment/pilot-pushes.png)
+3. Proxy Push Time:
+
+    ![Proxy Push Time](img/default-deployment/proxy-push-time.png)
+
+As you can see, 99.9% of proxies were waiting 30s to receive XDS configuration.
+
+### Scale istiod horizontally and vertically
+
+Now, deploy 2 istiod replicas with 250m of CPU and 1024Mi of memery:
+```shell
+oc apply -f smcp-scaled.yaml -n istio-system
+```
+
+Wait for new instances and redeploy apps to trigger push events:
+```shell
+for x in {1..20}
+do
+  oc get deploy -n bookinfo-$x | awk '{print $1}' | awk '!/NAME/' | xargs oc -n bookinfo-$x rollout restart deployment
+done
+```
+
+Go to Grafana, look at the Istio Control Plane dashboard and compare results:
+
+1. CPU:
+
+   ![CPU](img/scaled-deployment/cpu.png)
+2. Pilot Pushes:
+
+   ![Pilot Pushes](img/scaled-deployment/pilot-pushes.png)
+3. Proxy Push Time:
+
+   ![Proxy Push Time](img/scaled-deployment/proxy-push-time.png)
+
+As you can see, proxy push time dropped significantly and P99 is only 991ms - 20 times faster!
+There is also visible CPU spike, but each replica handles concurrently half as many requests,
+so processing is more efficient.
+
+It would be also worth to compare `pilot_proxy_queue_time` and `pilot_xds_push_time`.
+
+### Remember about long living connections
+
+Keep in mind that deploying additional replica will have no impact on performance immediately.
+Actually, metrics should not change at all. This is because XDS protocol uses gRPC protocol,
+so existing connections will be alive until they are not restarted or istiod is restarted.
+Then connections will be terminated and new connections should be routed to both instances equally.
+
+```shell
+oc apply -f smcp.yaml -n istio-system
+```
+
+```shell
+for x in {1..20}
+do
+  oc get deploy -n bookinfo-$x | awk '{print $1}' | awk '!/NAME/' | xargs oc -n bookinfo-$x rollout restart deployment
+done
+```
+
+Deploy additional replica of istiod:
+```shell
+oc apply -f smcp-2-replicas.yaml -n istio-system
+```
+
+Add ports to details service to generate additional clusters and endpoints:
+```shell
+for x in {1..20}
+do
+  oc apply -n bookinfo-$x -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: details
+  labels:
+    app: details
+    service: details
+spec:
+  ports:
+  - port: 9080
+    name: http
+  - port: 9081
+    name: http-1
+  - port: 9082
+    name: http-2
+  - port: 9083
+    name: http-3
+  - port: 9084
+    name: http-4
+  selector:
+    app: details
+EOF
+done
+```
+
+Go to Grafana, look at the Istio Control Plane dashboard and analyze results:
+
+1. CPU:
+
+   ![CPU](img/long-living-connections/cpu.png)
+2. Pilot Pushes:
+
+   ![Pilot Pushes](img/long-living-connections/pilot-pushes.png)
+3. Proxy Push Time:
+
+   ![Proxy Push Time](img/long-living-connections/proxy-push-time.png)
+
+As you can see on the last graph, P99 of proxy push time was almost 10s.
+This is because only the old instance handled all push requests. You can notice that
+on the CPU graph - the new line (yellow) is almost flat and the old one has a spike.
+
+Now you can restart proxies and compare results.
+
+In a production environment, a better idea would be a rollout restart of istiod,
+because that would trigger all proxies to reconnect as well.

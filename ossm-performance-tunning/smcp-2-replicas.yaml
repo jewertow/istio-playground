@@ -13,8 +13,6 @@ spec:
   gateways:
     egress:
       enabled: false
-    openshiftRoute:
-      enabled: false
   general:
     logging:
       componentLevels:
@@ -23,14 +21,11 @@ spec:
     accessLogging:
       file:
         name: /dev/stdout
+  runtime:
+    components:
+      pilot:
+        deployment:
+          replicas: 2
   tracing:
     type: None
----
-apiVersion: maistra.io/v1
-kind: ServiceMeshMemberRoll
-metadata:
-  name: default
-  namespace: istio-system
-spec:
-  members:
-    - bookinfo
+  version: v2.4

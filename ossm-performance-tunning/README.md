@@ -154,16 +154,16 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: Sidecar
 metadata:
-  name: ratings
-  namespace: bookinfo
+  name: sleep
+  namespace: sleep
 spec:
   workloadSelector:
     labels:
-      app: ratings
+      app: sleep
   egress:
   - hosts:
     - "istio-system/*"
-    - "httpbin/*
+    - "httpbin/*"
 ```
 
 Even though gateways are istio-proxies, the `Sidecar` resource is not applicable to gateways.
@@ -256,114 +256,37 @@ do
   printf "  - bookinfo-$x\n" >> smmr.yaml
 done
 ```
-Prepare SMCP configs:
-```shell
-cat <<EOF >> smcp.yaml
-apiVersion: maistra.io/v2
-kind: ServiceMeshControlPlane
-metadata:
-  name: basic
-spec:
-  addons:
-    kiali:
-      enabled: false
-    prometheus:
-      enabled: true
-    grafana:
-      enabled: true
-  gateways:
-    egress:
-      enabled: false
-  general:
-    logging:
-      componentLevels:
-        default: info
-  proxy:
-    accessLogging:
-      file:
-        name: /dev/stdout
-  tracing:
-    type: None
-  version: v2.4
-EOF
-cat <<EOF >> smcp-scaled-horizontally.yaml
-apiVersion: maistra.io/v2
-kind: ServiceMeshControlPlane
-metadata:
-  name: basic
-spec:
-  addons:
-    kiali:
-      enabled: false
-    prometheus:
-      enabled: true
-    grafana:
-      enabled: true
-  gateways:
-    egress:
-      enabled: false
-  general:
-    logging:
-      componentLevels:
-        default: info
-  proxy:
-    accessLogging:
-      file:
-        name: /dev/stdout
-  runtime:
-    components:
-      pilot:
-        deployment:
-          replicas: 2
-  tracing:
-    type: None
-  version: v2.4
-EOF
-cat <<EOF >> smcp-scaled-horizontally-and-vertically.yaml
-apiVersion: maistra.io/v2
-kind: ServiceMeshControlPlane
-metadata:
-  name: basic
-spec:
-  addons:
-    kiali:
-      enabled: false
-    prometheus:
-      enabled: true
-    grafana:
-      enabled: true
-  gateways:
-    egress:
-      enabled: false
-  general:
-    logging:
-      componentLevels:
-        default: info
-  proxy:
-    accessLogging:
-      file:
-        name: /dev/stdout
-  runtime:
-    components:
-      pilot:
-        container:
-          resources:
-            requests:
-              cpu: 250m
-              memory: 1024Mi
-        deployment:
-          replicas: 2
-  tracing:
-    type: None
-  version: v2.4
-EOF
-```
 
 ### Default deployment
 
 First, let's deploy SMCP with default resources:
 ```shell
-oc apply -f smcp.yaml -n istio-system
+oc apply -n istio-system -f - <<EOF
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  addons:
+    kiali:
+      enabled: false
+  gateways:
+    egress:
+      enabled: false
+  general:
+    logging:
+      componentLevels:
+        default: info
+  proxy:
+    accessLogging:
+      file:
+        name: /dev/stdout
+  tracing:
+    type: None
+  version: v2.4
+EOF
+```
+```shell
 oc apply -f smmr.yaml -n istio-system
 ```
 
@@ -392,7 +315,40 @@ As you can see, 99.9% of proxies were waiting 30s to receive XDS configuration.
 
 Now, deploy 2 istiod replicas with 250m of CPU and 1024Mi of memery:
 ```shell
-oc apply -f smcp-scaled.yaml -n istio-system
+oc apply -n istio-system -f - <<EOF
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  addons:
+    kiali:
+      enabled: false
+  gateways:
+    egress:
+      enabled: false
+  general:
+    logging:
+      componentLevels:
+        default: info
+  proxy:
+    accessLogging:
+      file:
+        name: /dev/stdout
+  runtime:
+    components:
+      pilot:
+        container:
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1024Mi
+        deployment:
+          replicas: 2
+  tracing:
+    type: None
+  version: v2.4
+EOF
 ```
 
 Wait for new instances and redeploy apps to trigger push events:
@@ -428,10 +384,35 @@ Actually, metrics should not change at all. This is because XDS protocol uses gR
 so existing connections will be alive until they are not restarted or istiod is restarted.
 Then connections will be terminated and new connections should be routed to both instances equally.
 
+Deploy default SMCP:
 ```shell
-oc apply -f smcp.yaml -n istio-system
+oc apply -n istio-system -f - <<EOF
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  addons:
+    kiali:
+      enabled: false
+  gateways:
+    egress:
+      enabled: false
+  general:
+    logging:
+      componentLevels:
+        default: info
+  proxy:
+    accessLogging:
+      file:
+        name: /dev/stdout
+  tracing:
+    type: None
+  version: v2.4
+EOF
 ```
 
+Deploy 20 bookinfo apps:
 ```shell
 for x in {1..20}
 do
@@ -441,7 +422,35 @@ done
 
 Deploy additional replica of istiod:
 ```shell
-oc apply -f smcp-2-replicas.yaml -n istio-system
+oc apply -n istio-system -f - <<EOF
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  addons:
+    kiali:
+      enabled: false
+  gateways:
+    egress:
+      enabled: false
+  general:
+    logging:
+      componentLevels:
+        default: info
+  proxy:
+    accessLogging:
+      file:
+        name: /dev/stdout
+  runtime:
+    components:
+      pilot:
+        deployment:
+          replicas: 2
+  tracing:
+    type: None
+  version: v2.4
+EOF
 ```
 
 Add ports to details service to generate additional clusters and endpoints:
@@ -493,4 +502,182 @@ on the CPU graph - the new line (yellow) is almost flat and the old one has a sp
 Now you can restart proxies and compare results.
 
 In a production environment, a better idea would be a rollout restart of istiod,
-because that would trigger all proxies to reconnect as well.
+because that would trigger all proxies to reconnect without restarting application workloads.
+
+### Filter out irrelevant events
+
+```shell
+oc apply -n istio-system -f - <<EOF
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  addons:
+    kiali:
+      enabled: false
+  gateways:
+    egress:
+      enabled: false
+  general:
+    logging:
+      componentLevels:
+        default: info
+  proxy:
+    accessLogging:
+      file:
+        name: /dev/stdout
+  runtime:
+    components:
+      pilot:
+        container:
+          env:
+            PILOT_FILTER_GATEWAY_CLUSTER_CONFIG: "true"
+  tracing:
+    type: None
+  version: v2.4
+EOF
+```
+
+Wait until istiod is ready and apply `Sidecar` resources:
+```shell
+oc apply -f - <<EOF
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  egress:
+  - hosts:
+    - "istio-system/*"
+    - "./*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: sleep
+  namespace: sleep
+spec:
+  workloadSelector:
+    labels:
+      app: sleep
+  egress:
+  - hosts:
+    - "istio-system/*"
+    - "httpbin/*"
+EOF
+```
+
+Deploy sleep, httpbin and 20 bookinfo apps:
+```shell
+oc apply -f https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/httpbin/httpbin.yaml -n httpbin
+oc apply -f https://raw.githubusercontent.com/maistra/istio/maistra-2.5/samples/httpbin/httpbin-gateway.yaml -n httpbin
+oc apply -f https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/sleep/sleep.yaml -n sleep
+for x in {1..20}
+do
+  oc apply -f https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/bookinfo/platform/kube/bookinfo.yaml -n bookinfo-$x
+done
+```
+
+Go to Grafana, look at the Istio Control Plane dashboard and compare results:
+
+1. CPU:
+
+   ![CPU](img/sidecar/cpu.png)
+2. Pilot Pushes:
+
+   ![Pilot Pushes](img/sidecar/pilot-pushes.png)
+3. Proxy Push Time:
+
+   ![Proxy Push Time](img/sidecar/proxy-push-time.png)
+
+Overall processing is still very slow, but keep in mind that istiod requests only 10m of CPU and 128Mi of memory in this example.
+CPU spike is half the size it was without `Sidecar` resources.
+P50 of proxy push time is just 372ms comparing to 13.9s - this is huge improvement.
+These improvements result from lower pilot pushes, which were 150 ops/s comparing to 250 ops/s in the peak,
+but before the peak, istiod had to perform less than 50 ops/s.
+
+Check clusters known to sleep and httpbin:
+```shell
+istioctl pc clusters deploy/sleep -n sleep
+SERVICE FQDN                                            PORT      SUBSET     DIRECTION     TYPE             DESTINATION RULE
+                                                        80        -          inbound       ORIGINAL_DST     
+BlackHoleCluster                                        -         -          -             STATIC           
+InboundPassthroughClusterIpv4                           -         -          -             ORIGINAL_DST     
+PassthroughCluster                                      -         -          -             ORIGINAL_DST     
+agent                                                   -         -          -             STATIC           
+grafana.istio-system.svc.cluster.local                  3000      -          outbound      EDS              
+httpbin.httpbin.svc.cluster.local                       8000      -          outbound      EDS              
+istio-ingressgateway.istio-system.svc.cluster.local     80        -          outbound      EDS              
+istio-ingressgateway.istio-system.svc.cluster.local     443       -          outbound      EDS              
+istio-ingressgateway.istio-system.svc.cluster.local     15021     -          outbound      EDS              
+istiod-basic.istio-system.svc.cluster.local             443       -          outbound      EDS              istiod-basic.istio-system
+istiod-basic.istio-system.svc.cluster.local             8188      -          outbound      EDS              istiod-basic.istio-system
+istiod-basic.istio-system.svc.cluster.local             15010     -          outbound      EDS              istiod-basic.istio-system
+istiod-basic.istio-system.svc.cluster.local             15012     -          outbound      EDS              istiod-basic.istio-system
+istiod-basic.istio-system.svc.cluster.local             15014     -          outbound      EDS              istiod-basic.istio-system
+prometheus.istio-system.svc.cluster.local               9090      -          outbound      EDS              
+prometheus_stats                                        -         -          -             STATIC           
+sds-grpc                                                -         -          -             STATIC           
+xds-grpc                                                -         -          -             STATIC           
+zipkin                                                  -         -          -             STRICT_DNS
+```
+```shell
+istioctl pc clusters deploy/httpbin -n httpbin
+SERVICE FQDN                                            PORT      SUBSET     DIRECTION     TYPE             DESTINATION RULE
+                                                        8000      -          inbound       ORIGINAL_DST     
+BlackHoleCluster                                        -         -          -             STATIC           
+InboundPassthroughClusterIpv4                           -         -          -             ORIGINAL_DST     
+PassthroughCluster                                      -         -          -             ORIGINAL_DST     
+agent                                                   -         -          -             STATIC           
+grafana.istio-system.svc.cluster.local                  3000      -          outbound      EDS              
+httpbin.httpbin.svc.cluster.local                       8000      -          outbound      EDS              
+istio-ingressgateway.istio-system.svc.cluster.local     80        -          outbound      EDS              
+istio-ingressgateway.istio-system.svc.cluster.local     443       -          outbound      EDS              
+istio-ingressgateway.istio-system.svc.cluster.local     15021     -          outbound      EDS              
+istiod-basic.istio-system.svc.cluster.local             443       -          outbound      EDS              istiod-basic.istio-system
+istiod-basic.istio-system.svc.cluster.local             8188      -          outbound      EDS              istiod-basic.istio-system
+istiod-basic.istio-system.svc.cluster.local             15010     -          outbound      EDS              istiod-basic.istio-system
+istiod-basic.istio-system.svc.cluster.local             15012     -          outbound      EDS              istiod-basic.istio-system
+istiod-basic.istio-system.svc.cluster.local             15014     -          outbound      EDS              istiod-basic.istio-system
+prometheus.istio-system.svc.cluster.local               9090      -          outbound      EDS              
+prometheus_stats                                        -         -          -             STATIC           
+sds-grpc                                                -         -          -             STATIC           
+xds-grpc                                                -         -          -             STATIC           
+zipkin                                                  -         -          -             STRICT_DNS
+```
+
+As you can see, sleep received cluster httpbin, and httpbin didn't receive sleep.
+
+Ingress gateway also knows only the relevant clusters:
+```shell
+istioctl pc clusters deploy/istio-ingressgateway -n istio-system
+SERVICE FQDN                          PORT     SUBSET     DIRECTION     TYPE           DESTINATION RULE
+BlackHoleCluster                      -        -          -             STATIC         
+agent                                 -        -          -             STATIC         
+httpbin.httpbin.svc.cluster.local     8000     -          outbound      EDS            
+prometheus_stats                      -        -          -             STATIC         
+sds-grpc                              -        -          -             STATIC         
+xds-grpc                              -        -          -             STATIC         
+zipkin                                -        -          -             STRICT_DNS
+```
+
+Now, you can remove sidecar resources and check clusters again to compare results:
+```shell
+oc delete sidecar default -n istio-system
+oc delete sidecar sleep -n sleep
+```
+```shell
+istioctl pc clusters deploy/sleep -n sleep | grep "bookinfo" | wc -l
+80
+```
+
+### Cleanup environment
+
+```shell
+for x in {1..20}
+do
+  oc delete -f https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/bookinfo/platform/kube/bookinfo.yaml -n bookinfo-$x
+done
+```

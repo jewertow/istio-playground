@@ -13,18 +13,8 @@ spec:
   - address: {{.eastwestGatewayIP}}
     ports:
       http: 15443
+    labels:
+      app: httpbin
+      security.istio.io/tlsMode: istio
   location: MESH_INTERNAL
   resolution: STATIC
----
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
-metadata:
-  name: istio-mtls-for-imported-httpbin
-spec:
-  host: httpbin.httpbin.svc.cluster.local
-  trafficPolicy:
-    portLevelSettings:
-    - port:
-        number: 8000
-      tls:
-        mode: ISTIO_MUTUAL

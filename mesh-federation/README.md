@@ -207,15 +207,63 @@ keast exec $SLEEP_POD_NAME -n sleep -c sleep -- curl -v httpbin.httpbin.svc.clus
 ```shell
 keast label namespace httpbin istio-injection=enabled
 keast apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/httpbin/httpbin.yaml -n httpbin
-```
-
-6. Delete service entry and send requests again. Requests still should be routed to both clusters.
-```shell
 keast delete serviceentry import-httpbin -n httpbin
 ```
+
+#### Verify load balancing
+
+1. Scale local deployment of httpbin:
+```shell
+keast scale deployment httpbin -n httpbin --replicas 2
+```
+Run a few requests and look at logs of httpbin:
+```shell
+while true
+do
+  keast exec $SLEEP_POD_NAME -n sleep -c sleep -- curl -v httpbin.httpbin.svc.cluster.local:8000/headers
+  sleep 2
+done
+```
+Sidecar of sleep app should have 3 endpoints and requests should be routed equally to all instances.
+
+2. Scale remote deployment of httpbin:
+```shell
+kwest scale deployment httpbin -n httpbin --replicas 3
+```
+Run requests and look at logs again.
+
+You should see that the new instances of httpbin in the west cluster do not receive traffic.
+
+3. Scale sleep deployment:
+```shell
+keast scale deployment sleep -n sleep --replicas 10
+```
+```shell
+cat <<EOF >> test-lb-for-different-clients.sh
+#!/bin/bash
+pod_names=$(KUBECONFIG=east.kubeconfig kubectl get pods -l app=sleep -n sleep -o jsonpath='{.items[*].metadata.name}')
+for pod in $pod_names; do
+  KUBECONFIG=east.kubeconfig kubectl exec $pod -n sleep -c sleep -- curl -v httpbin.httpbin.svc.cluster.local:8000/headers
+done
+EOF
+bash test-lb-for-different-clients.sh
+```
+Now requests should be routed to different instances.
+
+It's a known issue and as a workaround clients can always establish new TCP connection
+or configure maxRequestsPerConnection to enforce establishing more connections.
+* https://github.com/envoyproxy/envoy/issues/15071
+* https://discuss.istio.io/t/need-help-understanding-load-balancing-between-clusters/9552
+
+TODO: add examples with DestinationRule applied to east-west gateway with `maxRequestsPerConnection`.
+
+#### Configuring locality load balancing
+
+TODO: how to enable, how to disable, how to manage ratio
 
 ### Notes / TODOs
 
 1. Is `ISTIO_META_DNS_AUTO_ALLOCATE` needed?
 2. How to import a service, which has multiple ports?
 3. What about east-west gateways with hostnames, e.g. AWS?
+4. How to enforce load balancing for TLS passthrough?

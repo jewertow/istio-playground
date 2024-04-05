@@ -1,0 +1,30 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: import-httpbin
+spec:
+  hosts:
+  - httpbin.httpbin.svc.cluster.local
+  ports:
+  - number: 8000
+    name: http
+    protocol: HTTP
+  location: MESH_INTERNAL
+  resolution: STATIC
+  workloadSelector:
+    labels:
+      app: httpbin
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: WorkloadEntry
+metadata:
+  name: remote-httpbin
+spec:
+  address: {{ $.Values.eastwestGatewayIP }}
+  ports:
+    http: 15443
+  network: west-network
+  locality: west
+  labels:
+    app: httpbin
+    security.istio.io/tlsMode: istio

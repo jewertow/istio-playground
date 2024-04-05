@@ -8,3 +8,7 @@
 
 tunneling-outbound-traffic-vms/infra/external-app/http.conf
 tunneling-outbound-traffic-vms/infra/external-app/http2.conf
+
+mesh-federation/**/*.pem
+mesh-federation/common.mk
+mesh-federation/Makefile.selfsigned.mk

@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: WorkloadEntry
+metadata:
+  name: remote-instance-httpbin
+  namespace: httpbin
+  labels:
+    app: httpbin
+    security.istio.io/tlsMode: istio
+spec:
+  address: {{ $.Values.eastwestGatewayIP }}
+  network: west-network
+  locality: west
+  ports:
+    http: 15443

@@ -186,10 +186,10 @@ kwest apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/sample
 
 2. Import httpbin from west cluster to east cluster:
 ```shell
-keast create namespace httpbin
 EAST_WEST_GW_IP=$(kwest get svc -l istio=eastwestgateway -n istio-system -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
-helm template -s templates/import-httpbin.yaml . \
-  --set eastwestGatewayIP=$EAST_WEST_GW_IP | keast apply -n httpbin -f -
+helm template -s templates/import-remote.yaml . \
+  --set eastwestGatewayIP=$EAST_WEST_GW_IP \
+  | keast apply -f -
 ```
 
 3. Check endpoints in sleep's istio-proxy:
@@ -205,9 +205,15 @@ keast exec $SLEEP_POD_NAME -n sleep -c sleep -- curl -v httpbin.httpbin.svc.clus
 
 5. Now deploy httpbin locally as well and test requests again. Traffic should be routed to both instances equally.
 ```shell
+keast create namespace httpbin
 keast label namespace httpbin istio-injection=enabled
 keast apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/httpbin/httpbin.yaml -n httpbin
-keast delete serviceentry import-httpbin -n httpbin
+helm template -s templates/import-remote.yaml . \
+  --set eastwestGatewayIP=$EAST_WEST_GW_IP \
+  | keast delete -f -
+helm template -s templates/import-as-local.yaml . \
+  --set eastwestGatewayIP=$EAST_WEST_GW_IP \
+  | keast apply -f -
 ```
 
 #### Verify load balancing

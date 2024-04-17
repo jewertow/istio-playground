@@ -11,6 +11,6 @@ spec:
       name: tls
       protocol: TLS
     hosts:
-    - "*.local"
+    - "httpbin.httpbin.svc.cluster.local"
     tls:
       mode: AUTO_PASSTHROUGH

@@ -149,33 +149,22 @@ kwest create secret generic cacerts -n istio-system \
 helm template -s templates/istio.yaml . \
   --set localCluster=east \
   --set remoteCluster=west \
-  --set sdsRootCaEnabled=false \
   | istioctl --kubeconfig=east.kubeconfig install -y -f -
 ```
 ```shell
 helm template -s templates/istio.yaml . \
   --set localCluster=west \
   --set remoteCluster=east \
-  --set sdsRootCaEnabled=false \
+  --set eastwestIngressEnabled=true \
   | istioctl --kubeconfig=west.kubeconfig install -y -f -
 ```
 
-### Configure routing
+### Import and export services
 
-#### Ingress only (AUTO_PASSTHROUGH)
-
-1. Configure east-west gateway and enable mtls:
+1. Enable mTLS, deploy a client in the east cluster and a server in the west cluster:
 ```shell
-keast apply -f auto-passthrough-gateway.yaml -n istio-system
-kwest apply -f auto-passthrough-gateway.yaml -n istio-system
 keast apply -f mtls.yaml -n istio-system
 kwest apply -f mtls.yaml -n istio-system
-```
-
-#### Import remote service as local (*.cluster.local)
-
-1. Deploy client app on the east cluster and server on the west cluster:
-```shell
 keast create namespace sleep
 keast label namespace sleep istio-injection=enabled
 keast apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/sleep/sleep.yaml -n sleep
@@ -184,15 +173,22 @@ kwest label namespace httpbin istio-injection=enabled
 kwest apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/httpbin/httpbin.yaml -n httpbin
 ```
 
-2. Import httpbin from west cluster to east cluster:
+2. Export httpbin from the west cluster:
 ```shell
-EAST_WEST_GW_IP=$(kwest get svc -l istio=eastwestgateway -n istio-system -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
+kwest apply -f auto-passthrough-gateway.yaml -n istio-system
+```
+
+#### Without egress gateway
+
+3. Import httpbin from west cluster to east cluster:
+```shell
+REMOTE_INGRESS_IP=$(kwest get svc -l istio=eastwestgateway -n istio-system -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
 helm template -s templates/import-remote.yaml . \
-  --set eastwestGatewayIP=$EAST_WEST_GW_IP \
+  --set eastwestGatewayIP=$REMOTE_INGRESS_IP \
   | keast apply -f -
 ```
 
-3. Check endpoints in sleep's istio-proxy:
+Check endpoints in sleep's istio-proxy:
 ```shell
 istioctl --kubeconfig=east.kubeconfig pc endpoints deploy/sleep -n sleep | grep httpbin
 ```
@@ -209,10 +205,67 @@ keast create namespace httpbin
 keast label namespace httpbin istio-injection=enabled
 keast apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/httpbin/httpbin.yaml -n httpbin
 helm template -s templates/import-remote.yaml . \
-  --set eastwestGatewayIP=$EAST_WEST_GW_IP \
+  --set eastwestGatewayIP=$REMOTE_INGRESS_IP \
   | keast delete -f -
 helm template -s templates/import-as-local.yaml . \
+  --set eastwestGatewayIP=$REMOTE_INGRESS_IP \
+  | keast apply -f -
+```
+
+#### With egress gateway
+
+1. Install Istio with egress gateway:
+```shell
+helm template -s templates/istio.yaml . \
+  --set localCluster=east \
+  --set remoteCluster=west \
+  --set eastwestEgressEnabled=true \
+  | istioctl --kubeconfig=east.kubeconfig install -y -f -
+```
+```shell
+helm template -s templates/istio.yaml . \
+  --set localCluster=west \
+  --set remoteCluster=east \
+  --set eastwestIngressEnabled=true \
+  | istioctl --kubeconfig=west.kubeconfig install -y -f -
+```
+
+2. Import httpbin from west cluster to east cluster:
+```shell
+REMOTE_INGRESS_IP=$(kwest get svc -l istio=eastwestgateway -n istio-system -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
+LOCAL_EGRESS_IP=$(keast get svc -l istio=eastwestgateway-egress -n istio-system -o jsonpath='{.items[0].spec.clusterIP}')
+helm template -s templates/import-remote.yaml . \
   --set eastwestGatewayIP=$EAST_WEST_GW_IP \
+  --set egressGatewayIP=$LOCAL_EGRESS_IP \
+  --set eastwestEgressEnabled=true \
+  | keast apply -f -
+```
+
+Check endpoints in sleep's istio-proxy:
+```shell
+istioctl --kubeconfig=east.kubeconfig pc endpoints deploy/sleep -n sleep | grep httpbin
+```
+
+3. Test a request from sleep to httpbin:
+```shell
+SLEEP_POD_NAME=$(keast get pods -l app=sleep -n sleep -o jsonpath='{.items[0].metadata.name}')
+keast exec $SLEEP_POD_NAME -n sleep -c sleep -- curl -v httpbin.httpbin.svc.cluster.local:8000/headers
+```
+
+4. Now deploy httpbin locally as well and test requests again. Traffic should be routed to both instances equally.
+```shell
+keast create namespace httpbin
+keast label namespace httpbin istio-injection=enabled
+keast apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/httpbin/httpbin.yaml -n httpbin
+helm template -s templates/import-remote.yaml . \
+  --set eastwestGatewayIP=$REMOTE_INGRESS_IP \
+  --set egressGatewayIP=$LOCAL_EGRESS_IP \
+  --set eastwestEgressEnabled=true \
+  | keast delete -f -
+helm template -s templates/import-as-local.yaml . \
+  --set eastwestGatewayIP=$REMOTE_INGRESS_IP \
+  --set egressGatewayIP=$LOCAL_EGRESS_IP \
+  --set eastwestEgressEnabled=true \
   | keast apply -f -
 ```
 
@@ -266,6 +319,10 @@ TODO: add examples with DestinationRule applied to east-west gateway with `maxRe
 #### Configuring locality load balancing
 
 TODO: how to enable, how to disable, how to manage ratio
+
+#### With egress
+
+1. Deploy egress gateway
 
 ### Notes / TODOs
 

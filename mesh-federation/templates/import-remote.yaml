@@ -13,7 +13,11 @@ spec:
   location: MESH_INTERNAL
   resolution: STATIC
   endpoints:
+{{- if .Values.eastwestEgressEnabled }}
+  - address: {{ $.Values.egressGatewayIP }}
+{{- else }}
   - address: {{ $.Values.eastwestGatewayIP }}
+{{- end }}
     ports:
       http: 15443
     network: west-network
@@ -21,3 +25,67 @@ spec:
     labels:
       app: httpbin
       security.istio.io/tlsMode: istio
+---
+{{- if $.Values.eastwestEgressEnabled }}
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: istio-eastwestgateway-egress
+  namespace: istio-system
+spec:
+  selector:
+    istio: eastwestgateway-egress
+  servers:
+  - port:
+      number: 15443
+      name: tls
+      protocol: TLS
+    hosts:
+    - "*.httpbin.httpbin.svc.cluster.local"
+    tls:
+      mode: PASSTHROUGH
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: cross-network-egress
+  namespace: istio-system
+spec:
+  hosts:
+  - "*.httpbin.httpbin.svc.cluster.local"
+  gateways:
+  - istio-eastwestgateway-egress
+  tls:
+  - match:
+    - sniHosts:
+      # This rule matches Istio mTLS SNI format, i.e. outbound_.<port>_.<subset>_.<hostname>
+      - "*.httpbin.httpbin.svc.cluster.local"
+    route:
+    - destination:
+        host: ingress.remote-mesh.global
+        port:
+          number: 15443
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: ingress-remote-mesh
+  namespace: istio-system
+spec:
+  exportTo:
+  - "."
+  hosts:
+  - ingress.remote-mesh.global
+  ports:
+  - number: 15443
+    name: auto-passthrough-tls
+    protocol: TLS
+  resolution: STATIC
+  location: MESH_INTERNAL
+  endpoints:
+  - address: {{ $.Values.eastwestGatewayIP }}
+    ports:
+      auto-passthrough-tls: 15443
+    network: west-network
+    locality: west
+{{- end }}

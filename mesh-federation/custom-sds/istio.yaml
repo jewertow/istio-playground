@@ -3,6 +3,10 @@ kind: IstioOperator
 metadata:
   name: control-plane
 spec:
+  {{- if $.Values.sdsRootCaEnabled }}
+  hub: quay.io/jewertow
+  tag: custom-sds-for-root-ca
+  {{- end }}
   profile: minimal
   meshConfig:
     accessLogFile: /dev/stdout
@@ -20,6 +24,13 @@ spec:
         clusterName: {{ $.Values.localCluster }}
       network: {{ $.Values.localCluster }}-network
   components:
+    {{- if $.Values.sdsRootCaEnabled }}
+    pilot:
+      k8s:
+        env:
+        - name: ROOT_CA_SDS_CLUSTER_NAME
+          value: trust-bundle-sds
+    {{- end }}
     {{- if $.Values.eastwestIngressEnabled }}
     ingressGateways:
     - name: istio-eastwestgateway
@@ -32,6 +43,10 @@ spec:
         env:
         - name: ISTIO_META_REQUESTED_NETWORK_VIEW
           value: {{ $.Values.localCluster }}-network
+        {{- if $.Values.sdsRootCaEnabled }}
+        - name: ISTIO_BOOTSTRAP_OVERRIDE
+          value: /etc/istio/custom-bootstrap/custom_bootstrap.json
+        {{- end }}
         service:
           ports:
           - name: status-port
@@ -46,31 +61,20 @@ spec:
           - name: tls-webhook
             port: 15017
             targetPort: 15017
-    {{- end }}
-    {{- if $.Values.eastwestEgressEnabled }}
-    egressGateways:
-    - name: istio-eastwestgateway-egress
-      label:
-        istio: eastwestgateway-egress
-        app: istio-eastwestgateway-egress
-        topology.istio.io/network: {{ $.Values.localCluster }}-network
-      enabled: true
-      k8s:
-        env:
-        - name: ISTIO_META_REQUESTED_NETWORK_VIEW
-          value: {{ $.Values.remoteCluster }}-network
-        service:
-          ports:
-          - name: status-port
-            port: 15021
-            targetPort: 15021
-          - name: tls
-            port: 15443
-            targetPort: 15443
-          - name: tls-istiod
-            port: 15012
-            targetPort: 15012
-          - name: tls-webhook
-            port: 15017
-            targetPort: 15017
+        {{- if $.Values.sdsRootCaEnabled }}
+        overlays:
+        - apiVersion: apps/v1
+          kind: Deployment
+          name: istio-eastwestgateway
+          patches:
+          - path: spec.template.spec.containers.[name:istio-proxy].volumeMounts[-1]
+            value:
+              name: custom-bootstrap
+              mountPath:  /etc/istio/custom-bootstrap
+          - path: spec.template.spec.volumes[-1]
+            value:
+              name: custom-bootstrap
+              configMap:
+                name: custom-bootstrap-for-trust-bundle-federation
+        {{- end }}
     {{- end }}

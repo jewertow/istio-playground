@@ -161,7 +161,13 @@ helm template -s templates/istio.yaml . \
 
 ### Import and export services
 
-1. Enable mTLS, deploy a client in the east cluster and a server in the west cluster:
+**Note:** Gateway must be created before enabling STRICT mTLS. Otherwise, TLS will fail on the east-west gateway due to NC - cluster not found.
+1. Export httpbin from the west cluster:
+```shell
+kwest apply -f auto-passthrough-gateway.yaml -n istio-system
+```
+
+2. Enable mTLS, deploy a client in the east cluster and a server in the west cluster:
 ```shell
 keast apply -f mtls.yaml -n istio-system
 kwest apply -f mtls.yaml -n istio-system
@@ -173,11 +179,6 @@ kwest label namespace httpbin istio-injection=enabled
 kwest apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/httpbin/httpbin.yaml -n httpbin
 ```
 
-2. Export httpbin from the west cluster:
-```shell
-kwest apply -f auto-passthrough-gateway.yaml -n istio-system
-```
-
 #### Without egress gateway
 
 3. Import httpbin from west cluster to east cluster:
@@ -185,6 +186,7 @@ kwest apply -f auto-passthrough-gateway.yaml -n istio-system
 REMOTE_INGRESS_IP=$(kwest get svc -l istio=eastwestgateway -n istio-system -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
 helm template -s templates/import-remote.yaml . \
   --set eastwestGatewayIP=$REMOTE_INGRESS_IP \
+  --set eastwestEgressEnabled=false \
   | keast apply -f -
 ```
 
@@ -316,17 +318,75 @@ or configure maxRequestsPerConnection to enforce establishing more connections.
 
 TODO: add examples with DestinationRule applied to east-west gateway with `maxRequestsPerConnection`.
 
-#### Configuring locality load balancing
+#### Authorization
 
-TODO: how to enable, how to disable, how to manage ratio
+1. Deploy sleep in west cluster:
+```shell
+kwest create namespace sleep
+kwest label namespace sleep istio-injection=enabled
+kwest apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/sleep/sleep.yaml -n sleep
+```
 
-#### With egress
+2. Send a test request from sleep to httpbin locally:
+```shell
+SLEEP_POD_NAME=$(kwest get pods -l app=sleep -n sleep -o jsonpath='{.items[0].metadata.name}')
+kwest exec $SLEEP_POD_NAME -n sleep -c sleep -- curl -v httpbin.httpbin.svc.cluster.local:8000/headers
+```
 
-1. Deploy egress gateway
+3. Deny access from west sleep to httpbin:
+```shell
+kwest apply -n istio-system -f - <<EOF
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-east-sleep
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  action: DENY
+  rules:
+  - from:
+    - source:
+        principals: ["east.local/ns/sleep/sa/sleep"]
+EOF
+```
+
+3. Send a test request from the east cluster and then from the west cluster:
+```shell
+SLEEP_POD_NAME=$(kwest get pods -l app=sleep -n sleep -o jsonpath='{.items[0].metadata.name}')
+kwest exec $SLEEP_POD_NAME -n sleep -c sleep -- curl -v httpbin.httpbin.svc.cluster.local:8000/headers
+```
+```shell
+SLEEP_POD_NAME=$(keast get pods -l app=sleep -n sleep -o jsonpath='{.items[0].metadata.name}')
+keast exec $SLEEP_POD_NAME -n sleep -c sleep -- curl -v httpbin.httpbin.svc.cluster.local:8000/headers
+```
+Both requests should fail with 403 when requests are routed to the west cluster.
+```
+* IPv6: (none)
+* IPv4: 10.96.100.107
+*   Trying 10.96.100.107:8000...
+* Connected to httpbin.httpbin.svc.cluster.local (10.96.100.107) port 8000
+> GET /headers HTTP/1.1
+> Host: httpbin.httpbin.svc.cluster.local:8000
+> User-Agent: curl/8.7.1
+> Accept: */*
+> 
+* Request completely sent off
+< HTTP/1.1 403 Forbidden
+< content-length: 19
+< content-type: text/plain
+< date: Wed, 24 Apr 2024 21:33:44 GMT
+< server: envoy
+< x-envoy-upstream-service-time: 1
+< 
+{ [19 bytes data]
+100    19  100    19    0     0   3882      0 --:--:-- --:--:-- --:--:--  4750
+* Connection #0 to host httpbin.httpbin.svc.cluster.local left intact
+RBAC: access denied% 
+```
 
 ### Notes / TODOs
 
-1. Is `ISTIO_META_DNS_AUTO_ALLOCATE` needed?
-2. How to import a service, which has multiple ports?
-3. What about east-west gateways with hostnames, e.g. AWS?
-4. How to enforce load balancing for TLS passthrough?
+1. How to import a service, which has multiple ports?
+2. What about east-west gateways with hostnames, e.g. AWS?

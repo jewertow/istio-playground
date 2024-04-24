@@ -10,9 +10,11 @@ spec:
       proxyMetadata:
         ISTIO_META_DNS_CAPTURE: "true"
         ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+    {{- if not $.Values.commonTrustDomain }}
     trustDomain: {{ $.Values.localCluster }}.local
     trustDomainAliases:
     - {{ $.Values.remoteCluster }}.local
+    {{- end }}
   values:
     global:
       meshID: {{ $.Values.localCluster }}-mesh

@@ -21,8 +21,10 @@ spec:
       multiCluster:
         clusterName: {{ $.Values.localCluster }}
       network: {{ $.Values.localCluster }}-network
+      {{- if $.Values.debug }}
       logging:
         level: "all:debug"
+      {{- end }}
   components:
     {{- if $.Values.eastwestIngressEnabled }}
     ingressGateways:

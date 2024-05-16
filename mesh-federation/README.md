@@ -147,6 +147,7 @@ kwest create secret generic cacerts -n istio-system \
 helm template -s templates/istio.yaml . \
   --set localCluster=east \
   --set remoteCluster=west \
+  --set debug=false \
   | istioctl --kubeconfig=east.kubeconfig install -y -f -
 ```
 ```shell
@@ -154,6 +155,7 @@ helm template -s templates/istio.yaml . \
   --set localCluster=west \
   --set remoteCluster=east \
   --set eastwestIngressEnabled=true \
+  --set debug=false \
   | istioctl --kubeconfig=west.kubeconfig install -y -f -
 ```
 
@@ -331,7 +333,7 @@ SLEEP_POD_NAME=$(kwest get pods -l app=sleep -n sleep -o jsonpath='{.items[0].me
 kwest exec $SLEEP_POD_NAME -n sleep -c sleep -- curl -v httpbin.httpbin.svc.cluster.local:8000/headers
 ```
 
-3. Deny access from east sleep to httpbin:
+3. Deny access from sleep to west httpbin:
 ```shell
 kwest apply -n istio-system -f - <<EOF
 apiVersion: security.istio.io/v1beta1

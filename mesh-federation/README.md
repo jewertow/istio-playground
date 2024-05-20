@@ -45,8 +45,6 @@ east network could be `172.18.64.0/18` and west could be `172.18.128.0/18`, whic
 CIDRs must have escaped slash before the network mask to make it usable with `sed`, e.g. `172.18.64.0\/18`.
 ```shell
 export EAST_CLUSTER_CIDR="172.18.64.0\/18"
-```
-```shell
 export WEST_CLUSTER_CIDR="172.18.128.0\/18"
 ```
 ```shell
@@ -58,8 +56,8 @@ sed "s/{{.cidr}}/$WEST_CLUSTER_CIDR/g" ip-address-pool.tmpl.yaml | kwest apply -
 
 1. Download tools for certificate generation:
 ```shell
-wget https://raw.githubusercontent.com/istio/istio/release-1.21/tools/certs/common.mk
-wget https://raw.githubusercontent.com/istio/istio/release-1.21/tools/certs/Makefile.selfsigned.mk
+wget https://raw.githubusercontent.com/istio/istio/release-1.21/tools/certs/common.mk -O common.mk
+wget https://raw.githubusercontent.com/istio/istio/release-1.21/tools/certs/Makefile.selfsigned.mk -O Makefile.selfsigned.mk
 ```
 
 #### Common root
@@ -149,6 +147,7 @@ kwest create secret generic cacerts -n istio-system \
 helm template -s templates/istio.yaml . \
   --set localCluster=east \
   --set remoteCluster=west \
+  --set debug=false \
   | istioctl --kubeconfig=east.kubeconfig install -y -f -
 ```
 ```shell
@@ -156,6 +155,7 @@ helm template -s templates/istio.yaml . \
   --set localCluster=west \
   --set remoteCluster=east \
   --set eastwestIngressEnabled=true \
+  --set debug=false \
   | istioctl --kubeconfig=west.kubeconfig install -y -f -
 ```
 
@@ -237,7 +237,7 @@ helm template -s templates/istio.yaml . \
 REMOTE_INGRESS_IP=$(kwest get svc -l istio=eastwestgateway -n istio-system -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
 LOCAL_EGRESS_IP=$(keast get svc -l istio=eastwestgateway-egress -n istio-system -o jsonpath='{.items[0].spec.clusterIP}')
 helm template -s templates/import-remote.yaml . \
-  --set eastwestGatewayIP=$EAST_WEST_GW_IP \
+  --set eastwestGatewayIP=$REMOTE_INGRESS_IP \
   --set egressGatewayIP=$LOCAL_EGRESS_IP \
   --set eastwestEgressEnabled=true \
   | keast apply -f -
@@ -333,7 +333,7 @@ SLEEP_POD_NAME=$(kwest get pods -l app=sleep -n sleep -o jsonpath='{.items[0].me
 kwest exec $SLEEP_POD_NAME -n sleep -c sleep -- curl -v httpbin.httpbin.svc.cluster.local:8000/headers
 ```
 
-3. Deny access from west sleep to httpbin:
+3. Deny access from sleep to west httpbin:
 ```shell
 kwest apply -n istio-system -f - <<EOF
 apiVersion: security.istio.io/v1beta1
@@ -371,7 +371,7 @@ Both requests should fail with 403 when requests are routed to the west cluster.
 > Host: httpbin.httpbin.svc.cluster.local:8000
 > User-Agent: curl/8.7.1
 > Accept: */*
-> 
+>
 * Request completely sent off
 < HTTP/1.1 403 Forbidden
 < content-length: 19
@@ -379,14 +379,11 @@ Both requests should fail with 403 when requests are routed to the west cluster.
 < date: Wed, 24 Apr 2024 21:33:44 GMT
 < server: envoy
 < x-envoy-upstream-service-time: 1
-< 
+<
 { [19 bytes data]
 100    19  100    19    0     0   3882      0 --:--:-- --:--:-- --:--:--  4750
 * Connection #0 to host httpbin.httpbin.svc.cluster.local left intact
-RBAC: access denied% 
+RBAC: access denied%
 ```
 
 ### Notes / TODOs
-
-1. How to import a service, which has multiple ports?
-2. What about east-west gateways with hostnames, e.g. AWS?

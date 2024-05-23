@@ -302,9 +302,9 @@ keast scale deployment sleep -n sleep --replicas 10
 ```shell
 cat <<EOF >> test-lb-for-different-clients.sh
 #!/bin/bash
-pod_names=$(KUBECONFIG=east.kubeconfig kubectl get pods -l app=sleep -n sleep -o jsonpath='{.items[*].metadata.name}')
-for pod in $pod_names; do
-  KUBECONFIG=east.kubeconfig kubectl exec $pod -n sleep -c sleep -- curl -v httpbin.httpbin.svc.cluster.local:8000/headers
+pod_names="$(KUBECONFIG=east.kubeconfig kubectl get pods -l app=sleep -n sleep -o jsonpath='{.items[*].metadata.name}')"
+for pod in \$pod_names; do
+  KUBECONFIG=east.kubeconfig kubectl exec \$pod -n sleep -c sleep -- curl -v httpbin.httpbin.svc.cluster.local:8000/headers
 done
 EOF
 bash test-lb-for-different-clients.sh

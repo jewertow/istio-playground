@@ -148,6 +148,7 @@ helm template -s templates/istio.yaml . \
   --set localCluster=east \
   --set remoteCluster=west \
   --set debug=false \
+  --set mcpEnabled=true \
   | istioctl --kubeconfig=east.kubeconfig install -y -f -
 ```
 ```shell
@@ -156,18 +157,13 @@ helm template -s templates/istio.yaml . \
   --set remoteCluster=east \
   --set eastwestIngressEnabled=true \
   --set debug=false \
+  --set mcpEnabled=true \
   | istioctl --kubeconfig=west.kubeconfig install -y -f -
 ```
 
 ### Import and export services
 
-**Note:** Gateway must be created before enabling STRICT mTLS. Otherwise, TLS will fail on the east-west gateway due to NC - cluster not found.
-1. Export httpbin from the west cluster:
-```shell
-kwest apply -f auto-passthrough-gateway.yaml -n istio-system
-```
-
-2. Enable mTLS, deploy a client in the east cluster and a server in the west cluster:
+1. Enable mTLS, deploy a client in the east cluster and a server in the west cluster:
 ```shell
 keast apply -f mtls.yaml -n istio-system
 kwest apply -f mtls.yaml -n istio-system
@@ -187,6 +183,7 @@ REMOTE_INGRESS_IP=$(kwest get svc -l istio=eastwestgateway -n istio-system -o js
 helm template -s templates/import-remote.yaml . \
   --set eastwestGatewayIP=$REMOTE_INGRESS_IP \
   --set eastwestEgressEnabled=false \
+  --set mcpEnabled=true \
   | keast apply -f -
 ```
 

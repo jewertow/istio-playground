@@ -141,7 +141,7 @@ kwest create secret generic cacerts -n istio-system \
   --from-file=cert-chain.pem=west/cert-chain.pem
 ```
 
-### Install Istio
+### Install Istio 1.22.1+
 
 ```shell
 helm template -s templates/istio.yaml . \
@@ -161,16 +161,11 @@ helm template -s templates/istio.yaml . \
 
 ### Import and export services
 
-**Note:** Gateway must be created before enabling STRICT mTLS. Otherwise, TLS will fail on the east-west gateway due to NC - cluster not found.
-1. Export httpbin from the west cluster:
-```shell
-kwest apply -f auto-passthrough-gateway.yaml -n istio-system
-```
-
-2. Enable mTLS, deploy a client in the east cluster and a server in the west cluster:
+1. Enable mTLS, deploy `sleep` the east cluster and `httpbin` in the west cluster and export `httpbin`:
 ```shell
 keast apply -f mtls.yaml -n istio-system
 kwest apply -f mtls.yaml -n istio-system
+kwest apply -f auto-passthrough-gateway.yaml -n istio-system
 keast create namespace sleep
 keast label namespace sleep istio-injection=enabled
 keast apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/sleep/sleep.yaml -n sleep
@@ -181,7 +176,7 @@ kwest apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/sample
 
 #### Without egress gateway
 
-3. Import httpbin from west cluster to east cluster:
+2. Import httpbin from west cluster to east cluster:
 ```shell
 REMOTE_INGRESS_IP=$(kwest get svc -l istio=eastwestgateway -n istio-system -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
 helm template -s templates/import-remote.yaml . \
@@ -195,13 +190,13 @@ Check endpoints in sleep's istio-proxy:
 istioctl --kubeconfig=east.kubeconfig pc endpoints deploy/sleep -n sleep | grep httpbin
 ```
 
-4. Test a request from sleep to httpbin:
+3. Test a request from sleep to httpbin:
 ```shell
 SLEEP_POD_NAME=$(keast get pods -l app=sleep -n sleep -o jsonpath='{.items[0].metadata.name}')
 keast exec $SLEEP_POD_NAME -n sleep -c sleep -- curl -v httpbin.httpbin.svc.cluster.local:8000/headers
 ```
 
-5. Now deploy httpbin locally as well and test requests again. Traffic should be routed to both instances equally.
+4. Now deploy httpbin locally as well and test requests again. Traffic should be routed to both instances equally.
 ```shell
 keast create namespace httpbin
 keast label namespace httpbin istio-injection=enabled

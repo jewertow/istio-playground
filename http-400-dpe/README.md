@@ -528,7 +528,7 @@ Send a request to vault once again - now it should arrive successfully.
 
 ### Include vault service in the mesh
 
-Restore port 8200 in apm-server and add `vault-controller` to the SMMR:
+1. Restore port 8200 in apm-server and add `vault-controller` to the SMMR:
 ```shell
 oc apply -f - <<EOF
 apiVersion: v1
@@ -559,9 +559,9 @@ spec:
 EOF
 ```
 
-Send a request to vault - it should arrive successfully again.
+2. Send a request to vault - it should arrive successfully again.
 
-List listeners:
+3. List listeners:
 ```shell
 istioctl pc l deploy/sleep -n client
 ```

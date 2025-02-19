@@ -213,6 +213,7 @@ istioctl create-remote-secret \
 1. Deploy sample application in cluster1:
 ```shell
 kubectl --context="${CTX_CLUSTER1}" create namespace sample
+kubectl --context="${CTX_CLUSTER1}" label namespace sample istio-injection=enabled
 kubectl apply --context="${CTX_CLUSTER1}" \
   -f "https://raw.githubusercontent.com/istio/istio/${ISTIO_VERSION}/samples/helloworld/helloworld.yaml" \
   -l service=helloworld -n sample
@@ -226,6 +227,7 @@ kubectl apply --context="${CTX_CLUSTER1}" \
 2. Deploy sample application in cluster2:
 ```shell
 kubectl --context="${CTX_CLUSTER2}" create namespace sample
+kubectl --context="${CTX_CLUSTER2}" label namespace sample istio-injection=enabled
 kubectl apply --context="${CTX_CLUSTER2}" \
   -f "https://raw.githubusercontent.com/istio/istio/${ISTIO_VERSION}/samples/helloworld/helloworld.yaml" \
   -l service=helloworld -n sample

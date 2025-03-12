@@ -3,7 +3,7 @@
 ### Prerequisites
 
 1. Create 2 OpenShift clusters.
-2. Install OpenShift Service Mesh Operator v3.0.0-tp.2.
+2. Install OpenShift Service Mesh Operator v3.0.0.
 3. Make sure that you have installed `kubectl`, `istioctl` and `openssl`.
 
 ### Deploy control planes
@@ -12,7 +12,7 @@
 ```shell
 export CTX_CLUSTER1=<cluster1-ctx>
 export CTX_CLUSTER2=<cluster2-ctx>
-export ISTIO_VERSION=1.23.0
+export ISTIO_VERSION=1.24.3
 ```
 
 2. Create istio-system namespace in each cluster:
@@ -120,7 +120,7 @@ kubectl get secret -n istio-system --context "${CTX_CLUSTER2}" cacerts || kubect
 ```shell
 kubectl --context "${CTX_CLUSTER1}" create namespace istio-cni
 kubectl apply --context "${CTX_CLUSTER1}" -f - <<EOF
-apiVersion: sailoperator.io/v1alpha1
+apiVersion: sailoperator.io/v1
 kind: IstioCNI
 metadata:
   name: default
@@ -128,7 +128,7 @@ spec:
   version: v${ISTIO_VERSION}
   namespace: istio-cni
 ---
-apiVersion: sailoperator.io/v1alpha1
+apiVersion: sailoperator.io/v1
 kind: Istio
 metadata:
   name: default
@@ -143,15 +143,12 @@ spec:
       multiCluster:
         clusterName: cluster1
       network: network1
-    pilot:
-      env:
-        ROOT_CA_DIR: /etc/cacerts
 EOF
 ```
 ```shell
 kubectl --context "${CTX_CLUSTER2}" create namespace istio-cni
 kubectl apply --context "${CTX_CLUSTER2}" -f - <<EOF
-apiVersion: sailoperator.io/v1alpha1
+apiVersion: sailoperator.io/v1
 kind: IstioCNI
 metadata:
   name: default
@@ -159,7 +156,7 @@ spec:
   version: v${ISTIO_VERSION}
   namespace: istio-cni
 ---
-apiVersion: sailoperator.io/v1alpha1
+apiVersion: sailoperator.io/v1
 kind: Istio
 metadata:
   name: default
@@ -174,9 +171,6 @@ spec:
       multiCluster:
         clusterName: cluster2
       network: network2
-    pilot:
-      env:
-        ROOT_CA_DIR: /etc/cacerts
 EOF
 ```
 

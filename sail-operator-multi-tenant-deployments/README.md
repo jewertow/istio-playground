@@ -175,19 +175,47 @@ EOF
 
 1. client-1 -> server:
 ```shell
-kubectl exec deploy/sleep -n client-1 -- curl -v httpbin:8000/ip
+kubectl exec deploy/sleep -n client-1 -- curl -v httpbin.server:8000/ip
 ```
 ```shell
-kubectl exec deploy/sleep -n client-1 -- curl -v httpbin:8000/headers
+kubectl exec deploy/sleep -n client-1 -- curl -v httpbin.server:8000/headers
 ```
 
 2. client-2 -> server:
 ```shell
-kubectl exec deploy/sleep -n client-2 -- curl -v httpbin:8000/ip
+kubectl exec deploy/sleep -n client-2 -- curl -v httpbin.server:8000/ip
 ```
+
+## Fix service discovery
+
 ```shell
-kubectl exec deploy/sleep -n client-1 -- curl -v httpbin:8000/headers
+kubectl apply -f - <<EOF
+apiVersion: sailoperator.io/v1
+kind: Istio
+metadata:
+  name: mesh-2
+spec:
+  namespace: istio-system-2
+  updateStrategy:
+    type: RevisionBased
+  version: v1.24.3
+  values:
+    meshConfig:
+      accessLogFile: /dev/stdout
+      discoverySelectors:
+      - matchLabels:
+          mesh: istio-system-1
+      - matchLabels:
+          mesh: istio-system-2
+EOF
 ```
+
+## Test authz policies again
+
 ```shell
-kubectl exec deploy/sleep -n client-1 -- curl -v httpbin:8000/user-agent
+kubectl exec deploy/sleep -n client-2 -- curl -v httpbin.server:8000/ip
+```
+
+```shell
+kubectl exec deploy/sleep -n client-2 -- curl -v httpbin.server:8000/headers
 ```

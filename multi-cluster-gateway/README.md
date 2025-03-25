@@ -222,9 +222,46 @@ spec:
         host: kubernetes.default.svc.cluster.local
         port:
           number: 443
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+ name: deny-all-by-default
+ namespace: istio-system
+spec:
+  {}
+---
+# We must allow all, because TLS from istiod is not terminated, so we can't verify the client identity
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+ name: allow-to-kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
+ namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      app: kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
+  rules:
+  - {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+ name: kube-apiserver-\$LOCAL_CLUSTER.istio-system.svc.cluster.local
+ namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      app: istio-eastwestgateway
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/kube-apiserver-\$LOCAL_CLUSTER-egress-gateway"]
+---
 EOF
-cat east-west-gateway.yaml | sed "s/\$LOCAL_CLUSTER/east/g" | keast apply -f -
-cat east-west-gateway.yaml | sed "s/\$LOCAL_CLUSTER/west/g" | kwest apply -f -
+cat east-west-gateway.yaml | sed -e "s/\$LOCAL_CLUSTER/east/g" -e "s/\$REMOTE_CLUSTER/west/g" | keast apply -f -
+cat east-west-gateway.yaml | sed -e "s/\$LOCAL_CLUSTER/west/g" -e "s/\$REMOTE_CLUSTER/east/g" | kwest apply -f -
 ```
 
 10. Create egress gateways dedicated for connecting to the remote kube-apiservers:

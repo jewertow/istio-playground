@@ -227,7 +227,7 @@ spec:
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
- name: allow-to-kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
+ name: allow-all-to-kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
  namespace: istio-system
 spec:
   selector:
@@ -235,6 +235,24 @@ spec:
       app: kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
   rules:
   - {}
+---
+# This network policy secures the above allow-all authz rule
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-istiod-to-kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
+  namespace: istio-system
+spec:
+  podSelector:
+    matchLabels:
+      app: kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: istiod
+  policyTypes:
+  - Ingress
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

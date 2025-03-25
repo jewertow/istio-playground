@@ -175,24 +175,16 @@ kwest label deploy istio-eastwestgateway -n istio-system topology.istio.io/netwo
 
 8. Expose kube-apiserver on the east-west gateway:
 ```shell
-cat <<EOF > east-west-gateway.yaml
+cat <<EOF > istio-eastwestgateway-kube-apiserver.yaml
 apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
-  name: east-west
+  name: istio-eastwestgateway-kube-apiserver
   namespace: istio-system
 spec:
   selector:
     app: istio-eastwestgateway
   servers:
-  - port:
-      number: 15443
-      name: data-plane
-      protocol: TLS
-    tls:
-      mode: AUTO_PASSTHROUGH
-    hosts:
-    - httpbin.default.svc.cluster.local
   - port:
       number: 16443
       name: tls-kubernetes
@@ -205,7 +197,7 @@ spec:
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: east-west-routing
+  name: istio-eastwestgateway-kube-apiserver
   namespace: istio-system
 spec:
   exportTo:
@@ -213,7 +205,7 @@ spec:
   hosts:
   - kube-apiserver-\$LOCAL_CLUSTER.istio-system.svc.cluster.local
   gateways:
-  - east-west
+  - istio-eastwestgateway-kube-apiserver
   tcp:
   - match:
     - port: 16443
@@ -258,10 +250,9 @@ spec:
   - from:
     - source:
         principals: ["cluster.local/ns/istio-system/sa/kube-apiserver-\$LOCAL_CLUSTER-egress-gateway"]
----
 EOF
-cat east-west-gateway.yaml | sed -e "s/\$LOCAL_CLUSTER/east/g" -e "s/\$REMOTE_CLUSTER/west/g" | keast apply -f -
-cat east-west-gateway.yaml | sed -e "s/\$LOCAL_CLUSTER/west/g" -e "s/\$REMOTE_CLUSTER/east/g" | kwest apply -f -
+cat istio-eastwestgateway-kube-apiserver.yaml | sed -e "s/\$LOCAL_CLUSTER/east/g" -e "s/\$REMOTE_CLUSTER/west/g" | keast apply -f -
+cat istio-eastwestgateway-kube-apiserver.yaml | sed -e "s/\$LOCAL_CLUSTER/west/g" -e "s/\$REMOTE_CLUSTER/east/g" | kwest apply -f -
 ```
 
 10. Create egress gateways dedicated for connecting to the remote kube-apiservers:

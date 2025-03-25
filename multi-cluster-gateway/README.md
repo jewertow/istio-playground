@@ -1,4 +1,4 @@
-## Securing traffic to remote kube-apiserver
+## Securing access to remote kube-apiserver with Istio mTLS
 
 ### Prerequisites
 
@@ -293,7 +293,7 @@ cat kube-apiserver-egress-gateway-values.yaml | helm-west upgrade --install kube
 
 11. Configure the egress gateway for remote kube-apiserver:
 ```shell
-cat <<EOF > egress.yaml
+cat <<EOF > kube-apiserver-egress-gateway.yaml
 apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
@@ -371,9 +371,9 @@ spec:
   - "spiffe://cluster.local/ns/istio-system/sa/istio-eastwestgateway"
 EOF
 WEST_ADDR=$(kwest get svc istio-eastwestgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-cat egress.yaml | sed -e "s/\$REMOTE_CLUSTER/west/g" -e "s/\$REMOTE_ADDR/$WEST_ADDR/g" -e "s/\$API_SERVER_SNI/$WEST_API_TLS_SERVER_NAME/g" | keast apply -f -
+cat kube-apiserver-egress-gateway.yaml | sed -e "s/\$REMOTE_CLUSTER/west/g" -e "s/\$REMOTE_ADDR/$WEST_ADDR/g" -e "s/\$API_SERVER_SNI/$WEST_API_TLS_SERVER_NAME/g" | keast apply -f -
 EAST_ADDR=$(keast get svc istio-eastwestgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-cat egress.yaml | sed -e "s/\$REMOTE_CLUSTER/east/g" -e "s/\$REMOTE_ADDR/$EAST_ADDR/g" -e "s/\$API_SERVER_SNI/$EAST_API_TLS_SERVER_NAME/g" | kwest apply -f -
+cat kube-apiserver-egress-gateway.yaml | sed -e "s/\$REMOTE_CLUSTER/east/g" -e "s/\$REMOTE_ADDR/$EAST_ADDR/g" -e "s/\$API_SERVER_SNI/$EAST_API_TLS_SERVER_NAME/g" | kwest apply -f -
 ```
 
 10. Install a remote secret in cluster "east" that provides access to the API server in cluster west:

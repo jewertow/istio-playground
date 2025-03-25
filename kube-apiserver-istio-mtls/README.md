@@ -2,6 +2,9 @@
 
 ![diagram](diagram.svg)
 
+> [!IMPORTANT]  
+> Ingress Gateway blocks on the diagram represent the same Gateway workload. 
+
 ### Prerequisites
 
 1. Create 2 OpenShift clusters.

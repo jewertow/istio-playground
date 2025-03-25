@@ -229,10 +229,9 @@ cat east-west-gateway.yaml | sed "s/\$LOCAL_CLUSTER/west/g" | kwest apply -f -
 
 10. Create egress gateways dedicated for connecting to the remote kube-apiservers:
 ```shell
-cat <<EOF > remote-kubeapiserver-egress-gateway-values.yaml
+cat <<EOF > kube-apiserver-egress-gateway-values.yaml
 global:
   platform: openshift
-  network: \$NETWORK
 
 service:
   type: ClusterIP
@@ -241,12 +240,9 @@ service:
     port: 443
     protocol: TCP
     targetPort: 443
-
-env:
-  ISTIO_META_REQUESTED_NETWORK_VIEW: \$NETWORK
 EOF
-cat remote-kubeapiserver-egress-gateway-values.yaml | sed "s/\$NETWORK/east-network/g" | helm-east upgrade --install remote-kubeapiserver-egress-gateway istio/gateway -n istio-system -f -
-cat remote-kubeapiserver-egress-gateway-values.yaml | sed "s/\$NETWORK/west-network/g" | helm-west upgrade --install remote-kubeapiserver-egress-gateway istio/gateway -n istio-system -f -
+cat kube-apiserver-egress-gateway-values.yaml | helm-east upgrade --install kube-apiserver-west-egress-gateway istio/gateway -n istio-system -f -
+cat kube-apiserver-egress-gateway-values.yaml | helm-west upgrade --install kube-apiserver-east-egress-gateway istio/gateway -n istio-system -f -
 ```
 
 11. Configure the egress gateway for remote kube-apiserver:
@@ -255,11 +251,11 @@ cat <<EOF > egress.yaml
 apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
-  name: remote-kube-apiserver-egress-gateway
+  name: kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
   namespace: istio-system
 spec:
   selector:
-    app: remote-kubeapiserver-egress-gateway
+    app: kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
   servers:
   - port:
       number: 443
@@ -273,7 +269,7 @@ spec:
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: remote-kube-apiserver-egress-gateway
+  name: kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
   namespace: istio-system
 spec:
   exportTo:
@@ -281,7 +277,7 @@ spec:
   hosts:
   - \$API_SERVER_SNI
   gateways:
-  - remote-kube-apiserver-egress-gateway
+  - kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
   tls:
   - match:
     - port: 443
@@ -296,7 +292,7 @@ spec:
 apiVersion: networking.istio.io/v1
 kind: DestinationRule
 metadata:
-  name: istio-mtls-remote-kube-apiserver
+  name: kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
   namespace: istio-system
 spec:
   exportTo:
@@ -310,7 +306,7 @@ spec:
 apiVersion: networking.istio.io/v1
 kind: ServiceEntry
 metadata:
-  name: remote-kube-apiserver
+  name: kube-apiserver-\$REMOTE_CLUSTER-egress-gateway
   namespace: istio-system
 spec:
   exportTo:
@@ -335,6 +331,13 @@ cat egress.yaml | sed -e "s/\$REMOTE_CLUSTER/east/g" -e "s/\$REMOTE_ADDR/$EAST_A
 10. Install a remote secret in cluster "east" that provides access to the API server in cluster west:
 ```shell
 istioctl-west create-remote-secret \
-  --server=https://remote-kubeapiserver-egress-gateway.istio-system.svc.cluster.local:443 \
+  --server=https://kube-apiserver-west-egress-gateway.istio-system.svc.cluster.local:443 \
   --name=west | sed "/server: .*/a\        tls-server-name: $WEST_API_TLS_SERVER_NAME" | keast apply -n istio-system -f -
+```
+
+### Cleanup
+
+```shell
+helm-east uninstall remote-kubeapiserver-egress-gateway -n istio-system
+helm-west uninstall remote-kubeapiserver-egress-gateway -n istio-system
 ```

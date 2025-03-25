@@ -321,6 +321,8 @@ spec:
   resolution: DNS
   endpoints:
   - address: \$REMOTE_ADDR
+  subjectAltNames:
+  - "spiffe://cluster.local/ns/istio-system/sa/istio-eastwestgateway"
 EOF
 WEST_ADDR=$(kwest get svc istio-eastwestgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 cat egress.yaml | sed -e "s/\$REMOTE_CLUSTER/west/g" -e "s/\$REMOTE_ADDR/$WEST_ADDR/g" -e "s/\$API_SERVER_SNI/$WEST_API_TLS_SERVER_NAME/g" | keast apply -f -

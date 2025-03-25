@@ -1,5 +1,7 @@
 ## Securing access to remote kube-apiserver with Istio mTLS
 
+![diagram](diagram.svg)
+
 ### Prerequisites
 
 1. Create 2 OpenShift clusters.

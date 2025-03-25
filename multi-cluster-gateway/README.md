@@ -138,51 +138,39 @@ EOF
 
 7. Create east-west gateways:
 ```shell
-cat <<EOF > east-west-gateway-iop.yaml
-apiVersion: install.istio.io/v1alpha1
-kind: IstioOperator
-spec:
-  profile: empty
-  components:
-    ingressGateways:
-      - name: istio-eastwestgateway
-        label:
-          istio: eastwestgateway
-          app: istio-eastwestgateway
-          topology.istio.io/network: \$NETWORK
-        enabled: true
-        k8s:
-          env:
-            - name: ISTIO_META_REQUESTED_NETWORK_VIEW
-              value: \$NETWORK
-          service:
-            ports:
-              - name: status-port
-                port: 15021
-                targetPort: 15021
-              - name: tls
-                port: 15443
-                targetPort: 15443
-              - name: tls-istiod
-                port: 15012
-                targetPort: 15012
-              - name: tls-webhook
-                port: 15017
-                targetPort: 15017
-              # This port will be used to secure access to remote kube-apiserver with Istio mTLS
-              - name: istio-mtls-kube-api-server
-                port: 16443
-                targetPort: 16443
-  values:
-    gateways:
-      istio-ingressgateway:
-        injectionTemplate: gateway
-    global:
-      network: \$NETWORK
-      platform: openshift
+cat <<EOF > istio-eastwestgateway-values.yaml
+global:
+  platform: openshift
+
+service:
+  ports:
+  - name: status-port
+    port: 15021
+    targetPort: 15021
+  - name: tls
+    port: 15443
+    targetPort: 15443
+  - name: tls-istiod
+    port: 15012
+    targetPort: 15012
+  - name: tls-webhook
+    port: 15017
+    targetPort: 15017
+  - name: istio-mtls-kube-api-server
+    port: 16443
+    targetPort: 16443
+
+env:
+  ISTIO_META_REQUESTED_NETWORK_VIEW: \$NETWORK
 EOF
-cat east-west-gateway-iop.yaml | sed "s/\$NETWORK/east-network/g" | istioctl-east install -y -f -
-cat east-west-gateway-iop.yaml | sed "s/\$NETWORK/west-network/g" | istioctl-west install -y -f -
+cat istio-eastwestgateway-values.yaml | sed "s/\$NETWORK/east-network/g" | helm-east upgrade --install istio-eastwestgateway istio/gateway -n istio-system -f -
+cat istio-eastwestgateway-values.yaml | sed "s/\$NETWORK/west-network/g" | helm-west upgrade --install istio-eastwestgateway istio/gateway -n istio-system -f -
+```
+```shell
+keast label svc istio-eastwestgateway -n istio-system topology.istio.io/network=east-network
+keast label deploy istio-eastwestgateway -n istio-system topology.istio.io/network=east-network
+kwest label svc istio-eastwestgateway -n istio-system topology.istio.io/network=west-network
+kwest label deploy istio-eastwestgateway -n istio-system topology.istio.io/network=west-network
 ```
 
 8. Expose kube-apiserver on the east-west gateway:
@@ -212,7 +200,7 @@ spec:
     tls:
       mode: ISTIO_MUTUAL
     hosts:
-    - remote-kube-apiserver.istio-system.svc.cluster.local
+    - kube-apiserver-\$LOCAL_CLUSTER.istio-system.svc.cluster.local
 ---
 apiVersion: networking.istio.io/v1
 kind: VirtualService
@@ -223,7 +211,7 @@ spec:
   exportTo:
   - "."
   hosts:
-  - remote-kube-apiserver.istio-system.svc.cluster.local
+  - kube-apiserver-\$LOCAL_CLUSTER.istio-system.svc.cluster.local
   gateways:
   - east-west
   tcp:
@@ -235,8 +223,8 @@ spec:
         port:
           number: 443
 EOF
-cat east-west-gateway.yaml | keast apply -f -
-cat east-west-gateway.yaml | kwest apply -f -
+cat east-west-gateway.yaml | sed "s/\$LOCAL_CLUSTER/east/g" | keast apply -f -
+cat east-west-gateway.yaml | sed "s/\$LOCAL_CLUSTER/west/g" | kwest apply -f -
 ```
 
 10. Create egress gateways dedicated for connecting to the remote kube-apiservers:
@@ -301,7 +289,7 @@ spec:
       - \$API_SERVER_SNI
     route:
     - destination:
-        host: remote-kube-apiserver.istio-system.svc.cluster.local
+        host: kube-apiserver-\$REMOTE_CLUSTER.istio-system.svc.cluster.local
         port:
           number: 16443
 ---
@@ -313,11 +301,11 @@ metadata:
 spec:
   exportTo:
   - "."
-  host: remote-kube-apiserver.istio-system.svc.cluster.local
+  host: kube-apiserver-\$REMOTE_CLUSTER.istio-system.svc.cluster.local
   trafficPolicy:
     tls:
       mode: ISTIO_MUTUAL
-      sni: remote-kube-apiserver.istio-system.svc.cluster.local
+      sni: kube-apiserver-\$REMOTE_CLUSTER.istio-system.svc.cluster.local
 ---
 apiVersion: networking.istio.io/v1
 kind: ServiceEntry
@@ -328,7 +316,7 @@ spec:
   exportTo:
   - "."
   hosts:
-  - remote-kube-apiserver.istio-system.svc.cluster.local
+  - kube-apiserver-\$REMOTE_CLUSTER.istio-system.svc.cluster.local
   ports:
   - number: 16443
     name: tls
@@ -339,14 +327,14 @@ spec:
   - address: \$REMOTE_ADDR
 EOF
 WEST_ADDR=$(kwest get svc istio-eastwestgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-cat egress.yaml | sed -e "s/\$REMOTE_ADDR/$WEST_ADDR/g" -e "s/\$API_SERVER_SNI/$WEST_API_TLS_SERVER_NAME/g" | keast apply -f -
+cat egress.yaml | sed -e "s/\$REMOTE_CLUSTER/west/g" -e "s/\$REMOTE_ADDR/$WEST_ADDR/g" -e "s/\$API_SERVER_SNI/$WEST_API_TLS_SERVER_NAME/g" | keast apply -f -
 EAST_ADDR=$(keast get svc istio-eastwestgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-cat egress.yaml | sed -e "s/\$REMOTE_ADDR/$EAST_ADDR/g" -e "s/\$API_SERVER_SNI/$EAST_API_TLS_SERVER_NAME/g" | kwest apply -f -
+cat egress.yaml | sed -e "s/\$REMOTE_CLUSTER/east/g" -e "s/\$REMOTE_ADDR/$EAST_ADDR/g" -e "s/\$API_SERVER_SNI/$EAST_API_TLS_SERVER_NAME/g" | kwest apply -f -
 ```
 
 10. Install a remote secret in cluster "east" that provides access to the API server in cluster west:
 ```shell
 istioctl-west create-remote-secret \
   --server=https://remote-kubeapiserver-egress-gateway.istio-system.svc.cluster.local:443 \
-  --name=west | sed "/server: .*/a\        tls-server-name: $WEST_API_TLS_SERVER_NAME" | keast apply -n istio-system -f west-secret.yaml
+  --name=west | sed "/server: .*/a\        tls-server-name: $WEST_API_TLS_SERVER_NAME" | keast apply -n istio-system -f -
 ```

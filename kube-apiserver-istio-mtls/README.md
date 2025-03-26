@@ -41,7 +41,7 @@ wget https://raw.githubusercontent.com/istio/istio/release-1.24/tools/certs/Make
 3. Create shared root certificate:
 ```shell
 make -f Makefile.selfsigned.mk \
-  ROOTCA_CN="East Root CA" \
+  ROOTCA_CN="Root CA" \
   ROOTCA_ORG=my-company.org \
   root-ca
 make -f Makefile.selfsigned.mk \

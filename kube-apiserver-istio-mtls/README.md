@@ -280,20 +280,8 @@ cat istio-eastwestgateway-kube-apiserver.yaml | sed -e "s/\$LOCAL_CLUSTER/west/g
 
 10. Create egress gateways dedicated for connecting to the remote kube-apiservers:
 ```shell
-cat <<EOF > kube-apiserver-egress-gateway-values.yaml
-global:
-  platform: openshift
-
-service:
-  type: ClusterIP
-  ports:
-  - name: remote-kube-apiserver
-    port: 443
-    protocol: TCP
-    targetPort: 443
-EOF
-cat kube-apiserver-egress-gateway-values.yaml | helm-east upgrade --install kube-apiserver-west-egress-gateway istio/gateway -n istio-system -f -
-cat kube-apiserver-egress-gateway-values.yaml | helm-west upgrade --install kube-apiserver-east-egress-gateway istio/gateway -n istio-system -f -
+helm-east upgrade --install kube-apiserver-west-egress-gateway istio/gateway -n istio-system --set global.platform=openshift --set service.type=ClusterIP
+helm-west upgrade --install kube-apiserver-east-egress-gateway istio/gateway -n istio-system --set global.platform=openshift --set service.type=ClusterIP
 ```
 
 11. Configure the egress gateway for remote kube-apiserver:

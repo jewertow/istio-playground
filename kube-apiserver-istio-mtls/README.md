@@ -1,6 +1,20 @@
 ## Securing access to remote kube-apiserver with Istio mTLS
 
+Multi-primary and primary-remote deployments require direct access to kube-apiserver.
+This demo shows how Istio API can be used to configure multi-primary deployment when kube-apiserver is not directly
+accessible at L3 level. This solution relies on routing traffic through egress and ingress gateways with Istio mTLS.
+This method involves additional encryption between egress and ingress gateways, but allows to authorize clients
+at the edge of the mesh and reject unauthorized or malicious clients without touching kube-apiserver.
+
+This approach enables multi-primary / primary-remote deployments without involving solutions
+like VPC peering or VPN between clusters.
+
 ![diagram](diagram.svg)
+
+In the diagram, you can see that TLS connection from istiod is routed to the remote cluster via local egress gateway.
+The egress gateway originates mTLS connection to the remote ingress gateway, and passes the TLS connection from istiod
+through the new ecrypted connection as is. The remote ingress gateway performs authorization against the egress gateway
+and passes TLS connection from istiod to kube-apiserver as is.
 
 > [!IMPORTANT]  
 > Ingress Gateway blocks on the diagram represent the same Gateway workload. 

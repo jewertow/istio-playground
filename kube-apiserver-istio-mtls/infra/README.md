@@ -1,4 +1,4 @@
-## OpenShift with restricted access to kube-apiserver
+## OpenShift in AWS with restricted access to kube-apiserver
 
 ```mermaid
 flowchart TD
@@ -39,7 +39,7 @@ openshift-install create cluster --dir $CLUSTER_NAME
 
 Verify that API server is publicly accessible:
 ```shell
-export KUBECONFIG=./$CLUSTER_NAME/auth/kubeconfig
+export KUBECONFIG=$CLUSTER_NAME/auth/kubeconfig
 kubectl get pods --all-namespaces
 ```
 

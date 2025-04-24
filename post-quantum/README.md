@@ -50,7 +50,6 @@ spec:
   meshConfig:
     accessLogFile: /dev/stdout
     tlsDefaults:
-      minProtocolVersion: TLSV1_3
       ecdhCurves:
       - X25519MLKEM768
 EOF
@@ -60,6 +59,11 @@ EOF
 4. [Generate client and server certificates and keys](https://istio.io/latest/docs/tasks/traffic-management/ingress/secure-ingress/#generate-client-and-server-certificates-and-keys).
 
 5. Deploy a gateway:
+```shell
+kubectl create -n istio-system secret tls httpbin-credential \
+  --key=example_certs1/httpbin.example.com.key \
+  --cert=example_certs1/httpbin.example.com.crt
+```
 ```shell
 kubectl apply -f - <<EOF
 apiVersion: networking.istio.io/v1
@@ -77,7 +81,6 @@ spec:
     tls:
       mode: SIMPLE
       credentialName: httpbin-credential
-      minProtocolVersion: TLSV1_3
     hosts:
     - httpbin.example.com
 ---
@@ -91,12 +94,7 @@ spec:
   gateways:
   - mygateway
   http:
-  - match:
-    - uri:
-        prefix: /status
-    - uri:
-        prefix: /delay
-    route:
+  - route:
     - destination:
         port:
           number: 8000
@@ -118,7 +116,7 @@ docker run \
     -v ./example_certs1/example.com.crt:/etc/example_certs1/example.com.crt \
     --rm -it openquantumsafe/curl \
     curl -v \
-    --tlsv1.3 --curves X25519MLKEM768 \
+    --curves X25519MLKEM768 \
     --cacert /etc/example_certs1/example.com.crt \
     -H "Host: httpbin.example.com" \
     --resolve "httpbin.example.com:443:$INGRESS_IP" \

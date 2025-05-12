@@ -11,7 +11,7 @@
 1. Create KinD cluster with MetalLB:
 
     ```shell
-    curl https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/kind-lb/setupkind.sh | sh -
+    curl -s https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/kind-lb/setupkind.sh | sh -s -- --cluster-name test --worker-nodes 2
     ```
 
 ## Demo
@@ -19,17 +19,17 @@
 1. Install Istio:
 
    ```shell
-   cat <<EOF > istio.yaml
-   apiVersion: install.istio.io/v1alpha1
-   kind: IstioOperator
-   spec:
-     meshConfig:
-       accessLogFile: /dev/stdout
-       tlsDefaults:
-         ecdhCurves:
-         - X25519MLKEM768
-   EOF
-   ./istio-1.26.0/bin/istioctl install -f istio.yaml -y
+    cat <<EOF > istio.yaml
+    apiVersion: install.istio.io/v1alpha1
+    kind: IstioOperator
+    spec:
+      meshConfig:
+        accessLogFile: /dev/stdout
+        tlsDefaults:
+          ecdhCurves:
+          - X25519MLKEM768
+    EOF
+    ./istio-1.26.0/bin/istioctl install -f istio.yaml -y
    ```
    
 1. [Generate client and server certificates and keys](https://istio.io/latest/docs/tasks/traffic-management/ingress/secure-ingress/#generate-client-and-server-certificates-and-keys).
@@ -46,7 +46,7 @@
    apiVersion: networking.istio.io/v1
    kind: Gateway
    metadata:
-     name: mygateway
+     name: istio-ingressgateway
    spec:
      selector:
        istio: ingressgateway
@@ -69,7 +69,7 @@
      hosts:
      - "httpbin.example.com"
      gateways:
-     - mygateway
+     - istio-ingressgateway
      http:
      - route:
        - destination:
@@ -83,7 +83,7 @@
 
    ```shell
    kubectl label namespace default istio-injection=enabled
-   kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.24/samples/httpbin/httpbin.yaml
+   kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.26/samples/httpbin/httpbin.yaml
    ```
 
 1. Send a request to the server from OQS curl:
@@ -102,53 +102,92 @@
        "https://httpbin.example.com:443/status/200"
    ```
 
-The request should succeed with the following output:
+## Demo - ambient mode and mesh-wide post-quantum-safe key exchange
 
+1. Remove httpbin with sidecar:
+
+   ```shell
+   kubectl label namespace default istio-injection-
+   kubectl delete -f https://raw.githubusercontent.com/istio/istio/release-1.26/samples/httpbin/httpbin.yaml
    ```
-   * Added httpbin.example.com:443:172.18.64.1 to DNS cache
-   * Hostname httpbin.example.com was found in DNS cache
-   *   Trying 172.18.64.1:443...
-   * ALPN: curl offers http/1.1
-   * TLSv1.3 (OUT), TLS handshake, Client hello (1):
-   *  CAfile: /etc/example_certs1/example.com.crt
-   *  CApath: none
-   * TLSv1.3 (IN), TLS handshake, Server hello (2):
-   * TLSv1.3 (IN), TLS change cipher, Change cipher spec (1):
-   * TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
-   * TLSv1.3 (IN), TLS handshake, Certificate (11):
-   * TLSv1.3 (IN), TLS handshake, CERT verify (15):
-   * TLSv1.3 (IN), TLS handshake, Finished (20):
-   * TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
-   * TLSv1.3 (OUT), TLS handshake, Finished (20):
-   * SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / X25519MLKEM768 / RSASSA-PSS
-   * ALPN: server accepted http/1.1
-   * Server certificate:
-   *  subject: CN=httpbin.example.com; O=httpbin organization
-   *  start date: Apr 23 13:10:53 2025 GMT
-   *  expire date: Apr 23 13:10:53 2026 GMT
-   *  common name: httpbin.example.com (matched)
-   *  issuer: O=example Inc.; CN=example.com
-   *  SSL certificate verify ok.
-   *   Certificate level 0: Public key type RSA (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
-   *   Certificate level 1: Public key type RSA (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
-   * Connected to httpbin.example.com (172.18.64.1) port 443
-   * using HTTP/1.x
-   > GET /status/200 HTTP/1.1
-   > Host: httpbin.example.com
-   > User-Agent: curl/8.11.1
-   > Accept: */*
-   > 
-   * Request completely sent off
-   * TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
-   * TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
-   < HTTP/1.1 200 OK
-   < access-control-allow-credentials: true
-   < access-control-allow-origin: *
-   < content-type: text/plain; charset=utf-8
-   < date: Wed, 23 Apr 2025 13:25:28 GMT
-   < content-length: 0
-   < x-envoy-upstream-service-time: 4
-   < server: istio-envoy
-   < 
-   * Connection #0 to host httpbin.example.com left intact
+
+1. Create secret in default namespace:
+    ```shell
+    kubectl create secret tls httpbin-credential \
+      --key=example_certs1/httpbin.example.com.key \
+      --cert=example_certs1/httpbin.example.com.crt
+    ```
+
+1. Install Istio:
+
+   ```shell
+   cat <<EOF > istio.yaml
+   apiVersion: install.istio.io/v1alpha1
+   kind: IstioOperator
+   spec:
+     hub: quay.io/jewertow
+     tag: post-quantum-safe-kx
+     profile: ambient
+     components:
+       ingressGateways:
+       - name: istio-ingressgateway
+         namespace: default
+         enabled: true
+     meshConfig:
+       accessLogFile: /dev/stdout
+     values:
+       global:
+         variant: ""
+       pilot:
+         env:
+           COMPLIANCE_POLICY: "post-quantum-safe-kx"
+       ztunnel:
+         env:
+           COMPLIANCE_POLICY: "post-quantum-safe-kx"
+   EOF
+   ./istio-1.26.0/bin/istioctl install -f istio.yaml -y
+   ```
+
+1. Deploy sidecarless httpbin and sleep:
+
+   ```shell
+   kubectl label namespace default istio.io/dataplane-mode=ambient
+   kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.26/samples/httpbin/httpbin.yaml
+   kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.26/samples/sleep/sleep.yaml
+   ```
+
+1. Enforce deploying applications on different nodes to test ztunnel to ztunnel traffic:
+
+   ```shell
+   kubectl patch deploy httpbin --type='json' -p='[{"op": "add", "path": "/spec/template/spec/nodeName", "value": "test-worker"}]'
+   kubectl patch deploy sleep --type='json' -p='[{"op": "add", "path": "/spec/template/spec/nodeName", "value": "test-worker2"}]'
+   ```
+
+1. Send mesh-internal and mesh-external requests to httpbin:
+
+   ```shell
+   kubectl exec deploy/sleep -- curl -vs httpbin:8000/headers
+   ```
+   ```shell
+   INGRESS_IP=$(kubectl get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+   docker run \
+       --network kind \
+       -v ./example_certs1/example.com.crt:/etc/example_certs1/example.com.crt \
+       --rm -it openquantumsafe/curl \
+       curl -v \
+       --curves X25519MLKEM768 \
+       --cacert /etc/example_certs1/example.com.crt \
+       -H "Host: httpbin.example.com" \
+       --resolve "httpbin.example.com:443:$INGRESS_IP" \
+       "https://httpbin.example.com:443/status/200"
+   ```
+
+1. Deploy waypoint in the default namespace and send requests again:
+
+   ```shell
+   kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || \
+   kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0-rc.1/standard-install.yaml
+   ```
+   ```shell
+   istioctl waypoint apply -n default --enroll-namespace
    ```

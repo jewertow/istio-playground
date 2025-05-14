@@ -19,17 +19,17 @@
 1. Install Istio:
 
    ```shell
-    cat <<EOF > istio.yaml
-    apiVersion: install.istio.io/v1alpha1
-    kind: IstioOperator
-    spec:
-      meshConfig:
-        accessLogFile: /dev/stdout
-        tlsDefaults:
-          ecdhCurves:
-          - X25519MLKEM768
-    EOF
-    ./istio-1.26.0/bin/istioctl install -f istio.yaml -y
+   cat <<EOF > istio.yaml
+   apiVersion: install.istio.io/v1alpha1
+   kind: IstioOperator
+   spec:
+     meshConfig:
+       accessLogFile: /dev/stdout
+       tlsDefaults:
+         ecdhCurves:
+         - X25519MLKEM768
+   EOF
+   ./istio-1.26.0/bin/istioctl install -f istio.yaml -y
    ```
    
 1. [Generate client and server certificates and keys](https://istio.io/latest/docs/tasks/traffic-management/ingress/secure-ingress/#generate-client-and-server-certificates-and-keys).

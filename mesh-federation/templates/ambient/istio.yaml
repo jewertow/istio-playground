@@ -1,0 +1,37 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  hub: quay.io/jewertow
+  tag: master
+  profile: ambient
+  meshConfig:
+    accessLogFile: /dev/stdout
+    defaultConfig:
+      proxyMetadata:
+        ISTIO_META_DNS_CAPTURE: "true"
+        DNS_PROXY_ADDR: "0.0.0.0:15053"
+  values:
+    cni:
+      ambient:
+        enabled: true
+        dnsCapture: true
+    pilot:
+      env:
+        PILOT_ENABLE_AMBIENT: "true"
+        PILOT_ENABLE_AMBIENT_WAYPOINTS: "true"
+        AMBIENT_ENABLE_MULTI_NETWORK: "true"
+    ztunnel:
+      meshConfig:
+        defaultConfig:
+          proxyMetadata:
+            ISTIO_META_DNS_CAPTURE: "true"
+    global:
+      meshID: {{ $.Values.localCluster }}-mesh
+      multiCluster:
+        clusterName: {{ $.Values.localCluster }}-cluster
+      network: {{ $.Values.localCluster }}-network
+      {{- if $.Values.debug }}
+      logging:
+        level: "all:debug"
+      {{- end }}
+      variant: ""

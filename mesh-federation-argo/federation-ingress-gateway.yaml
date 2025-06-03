@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: federation-ingress-gateway
+  namespace: openshift-gitops
+spec:
+  destination:
+    namespace: istio-system
+    server: https://kubernetes.default.svc
+  project: default
+  sources:
+    - repoURL: https://github.com/openshift-service-mesh/istio
+      path: manifests/charts/gateway
+      targetRevision: release-1.24
+      helm:
+        valueFiles:
+        - $values/east/federation-ingress-gateway-values.yaml
+    - repoURL: https://github.com/jewertow/mesh-federation-argo-mesh-admin
+      targetRevision: master
+      ref: values
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

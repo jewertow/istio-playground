@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: todo-app
+  namespace: argocd
+spec:
+  destination:
+    namespace: todo
+    server: https://kubernetes.default.svc
+  project: default
+  sources:
+  - repoURL: https://github.com/jewertow/istio-playground
+    path: mesh-federation-helm-charts
+    targetRevision: mesh-federation-helm-charts
+    helm:
+      valueFiles:
+      - $adminValues/global.yaml
+      - $userValues/apps.yaml
+  - repoURL: https://github.com/jewertow/istio-playground
+    targetRevision: mesh-federation-helm-charts-global
+    ref: adminValues
+  - repoURL: https://github.com/jewertow/istio-playground
+    targetRevision: mesh-federation-helm-charts-apps
+    ref: userValues
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+    - CreateNamespace=true

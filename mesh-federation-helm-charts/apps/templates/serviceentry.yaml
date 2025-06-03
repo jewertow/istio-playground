@@ -24,7 +24,7 @@ spec:
   - address: {{ $addr }}
     ports:
     {{- range $port := $svc.ports }}
-    {{ $port.name }}: {{ $mesh.port }}
+      {{ $port.name }}: {{ $mesh.port }}
     {{- end }}
     network:  {{ $mesh.network }}
     locality: {{ $mesh.locality }}

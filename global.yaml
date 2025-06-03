@@ -1,0 +1,20 @@
+global:
+  configNamespace: istio-config
+  meshes:
+  - mesh: east-mesh
+    addresses:
+    - 1.1.1.1
+    - 2.2.2.2
+    port: 15443
+    network: east-network
+    locality: us-east1
+    importedServices:
+    - foo.mesh.global
+  - mesh: west-mesh
+    addresses:
+    - 3.3.3.3
+    port: 15443
+    network: west-network
+    locality: us-west1
+    importedServices:
+    - bar.mesh.global

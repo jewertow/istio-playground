@@ -21,7 +21,7 @@ spec:
   location: MESH_INTERNAL
   resolution: DNS
   endpoints:
-  {{- range $mesh := $.Values.global.meshes }}
+  {{- range $mesh := $.Values.global.remote }}
   {{- if has $hostname $mesh.importedServices }}
   {{- range $addr := $mesh.addresses }}
   - address: {{ $addr }}

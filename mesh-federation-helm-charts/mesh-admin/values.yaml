@@ -1,0 +1,19 @@
+global:
+  configNamespace: istio-system
+#  defaultServicePorts:
+#  - number: 80
+#    name: http
+#    protocol: HTTP
+#  local:
+#    export:
+#    - hostname: search.mesh.global
+#  remote:
+#  - mesh: east-mesh
+#    addresses:
+#    - 1.1.1.1
+#    - 2.2.2.2
+#    port: 15443
+#    network: east-network
+#    locality: us-east1
+#    importedServices:
+#    - foo.mesh.global

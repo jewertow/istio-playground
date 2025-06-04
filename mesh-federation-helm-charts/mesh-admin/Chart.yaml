@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mesh-federation-helm-charts
+description: A Helm chart for importing and exporting services between federated Istio meshes
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

@@ -8,16 +8,10 @@ import: []
 #  - number: 80
 #    name: http
 #    protocol: HTTP
-#  - number: 443
-#    name: https
-#    protocol: HTTPS
 
 export: []
 #- hostname: payments.mesh.global
 #  ports:
-#  - number: 80
-#    name: http
-#    protocol: HTTP
 #  - number: 443
 #    name: https
 #    protocol: HTTPS

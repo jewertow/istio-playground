@@ -5,17 +5,20 @@ apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
   name: import-{{ printf "%s" $svc.hostname | replace "." "-" | trunc 253 }}
-  namespace: {{ required "global.configNamespace is required" $.Values.global.configNamespace }}
+  namespace: {{ $.Release.Namespace }}
 spec:
+  exportTo:
+  - "."
   hosts:
   - {{ $hostname }}
   ports:
-  {{- range $port := $svc.ports }}
-  - number:   {{ $port.number }}
-    name:     {{ $port.name }}
+  {{- $ports := $svc.ports | default $.Values.global.defaultServicePorts }}
+  {{- range $port := $ports }}
+  - number: {{ $port.number }}
+    name: {{ $port.name }}
     protocol: {{ $port.protocol }}
   {{- end }}
-  location:   MESH_INTERNAL
+  location: MESH_INTERNAL
   resolution: DNS
   endpoints:
   {{- range $mesh := $.Values.global.meshes }}
@@ -26,7 +29,7 @@ spec:
     {{- range $port := $svc.ports }}
       {{ $port.name }}: {{ $mesh.port }}
     {{- end }}
-    network:  {{ $mesh.network }}
+    network: {{ $mesh.network }}
     locality: {{ $mesh.locality }}
     labels:
       security.istio.io/tlsMode: istio
@@ -41,15 +44,20 @@ apiVersion: networking.istio.io/v1
 kind: ServiceEntry
 metadata:
   name: export-{{ printf "%s" $export.hostname | replace "." "-" | trunc 253 }}
-  namespace: {{ $.Values.global.configNamespace }}
+  namespace: {{ $.Release.Namespace }}
 spec:
+  exportTo:
+  - {{ $.Values.global.configNamespace }}
   hosts:
   - {{ $export.hostname }}
   location: MESH_INTERNAL
   ports:
-  - number: 80
-    name: http
-    protocol: HTTP
+  {{- $ports := $export.ports | default $.Values.global.defaultServicePorts }}
+  {{- range $port := $ports }}
+  - number: {{ $port.number }}
+    name: {{ $port.name }}
+    protocol: {{ $port.protocol }}
+  {{- end }}
   resolution: STATIC
   workloadSelector:
     labels:

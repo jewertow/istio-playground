@@ -7,6 +7,7 @@ global:
 #  local:
 #    export:
 #    - hostname: search.mesh.global
+#      ports: [8000, 9000]
 #  remote:
 #  - mesh: east-mesh
 #    addresses:

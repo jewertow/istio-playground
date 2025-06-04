@@ -1,0 +1,22 @@
+{{- range $export := .Values.global.local.export }}
+{{- range $port := $export.ports }}
+{{- $host := include "hostname.withPort" (dict "hostname" $export.hostname "port" $port) }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: export-{{ printf "%s" $export.hostname | replace "." "-" }}-{{ $port }}
+  namespace: istio-system
+spec:
+  host: {{ $host }}
+  to:
+    kind: Service
+    name: federation-ingress-gateway
+    weight: 100
+  port:
+    targetPort: tls-passthrough
+  tls:
+    termination: passthrough
+  wildcardPolicy: None
+{{- end }}
+{{- end }}

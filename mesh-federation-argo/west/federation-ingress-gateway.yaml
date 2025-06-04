@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: federation-ingress-gateway
+  namespace: openshift-gitops
+spec:
+  destination:
+    namespace: istio-system
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    repoURL: https://github.com/openshift-service-mesh/istio
+    path: manifests/charts/gateway
+    targetRevision: release-1.24
+    helm:
+      valuesObject:
+        global:
+          platform: openshift
+        service:
+          type: ClusterIP
+          ports:
+          - name: tls
+            port: 15443
+            targetPort: 15443
+        env:
+          ISTIO_META_REQUESTED_NETWORK_VIEW: west-network
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

@@ -1,12 +1,4 @@
 apiVersion: sailoperator.io/v1
-kind: IstioCNI
-metadata:
-  name: default
-spec:
-  version: v1.24.3
-  namespace: istio-cni
----
-apiVersion: sailoperator.io/v1
 kind: Istio
 metadata:
   name: default
@@ -18,8 +10,14 @@ spec:
   values:
     meshConfig:
       accessLogFile: /dev/stdout
+      defaultConfig:
+        proxyMetadata:
+          ISTIO_META_DNS_CAPTURE: "true"
+    pilot:
+      env:
+        PILOT_ENABLE_IP_AUTOALLOCATE: "true"
     global:
-      meshID: east-mesh
+      meshID: west-mesh
       multiCluster:
-        clusterName: east-cluster
-      network: east-network
+        clusterName: west-cluster
+      network: west-network

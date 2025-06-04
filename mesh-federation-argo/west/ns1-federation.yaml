@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ns1-federation
+  namespace: openshift-gitops
+spec:
+  destination:
+    namespace: ns1
+    server: https://kubernetes.default.svc
+  project: default
+  sources:
+  - repoURL: https://github.com/jewertow/istio-playground
+    path: mesh-federation-helm-charts/namespace-admin
+    targetRevision: mesh-federation-helm-charts
+    helm:
+      valueFiles:
+      - $adminValues/west/global.yaml
+      - $userValues/west/values.yaml
+  - repoURL: https://github.com/jewertow/mesh-federation-argo-mesh-admin
+    targetRevision: west-cluster
+    ref: adminValues
+  - repoURL: https://github.com/jewertow/mesh-federation-argo-namespace-admin
+    targetRevision: west-cluster
+    ref: userValues
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

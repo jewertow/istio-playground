@@ -42,18 +42,41 @@
     kwest apply -f rbac.yaml
     ```
 
-1. Deploy gateways:
+1. Deploy federation ingress gateway:
 
-    ```shell
-    keast apply -f egress-gateway.yaml
-    kwest apply -f egress-gateway.yaml
-    ```
     ```shell
     keast apply -f east/federation-ingress-gateway.yaml
     kwest apply -f west/federation-ingress-gateway.yaml
     ```
 
+1. Deploy applications:
 
+    ```shell
+    keast create namespace ns1
+    keast label namespace ns1 istio-injection=enabled
+    keast apply -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/sleep/sleep.yaml -n ns1
+    ```
+    ```shell
+    kwest create namespace ns2
+    kwest label namespace ns2 istio-injection=enabled
+    kwest apply -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/httpbin/httpbin.yaml -n ns2
+    ```
+
+1. Export httpbin from west cluster:
+
+    ```shell
+    kwest apply -f west/mesh-federation.yaml
+    kwest apply -f west/ns1-federation.yaml
+    ```
+
+#### Enable egress gateway:
+
+1. Deploy egress gateway:
+
+    ```shell
+    keast apply -f egress-gateway.yaml
+    kwest apply -f egress-gateway.yaml
+    ```
 
 ```yaml
   sources:

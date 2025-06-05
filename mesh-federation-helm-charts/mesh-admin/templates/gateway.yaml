@@ -1,6 +1,7 @@
 {{- $selector := .Values.global.gatewaySelector | default (dict "app" "federation-ingress-gateway") }}
 {{- $port := .Values.global.port | default 15443 }}
-{{- $exports := .Values.global.local.export | default list }}
+{{- $local := get .Values.global "local" | default dict }}
+{{- $exports := get $local "export" | default list }}
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:

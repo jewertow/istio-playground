@@ -62,11 +62,18 @@
     kwest apply -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/httpbin/httpbin.yaml -n ns2
     ```
 
-1. Export httpbin from west cluster:
+1. Export httpbin from the west cluster:
 
     ```shell
     kwest apply -f west/mesh-federation.yaml
     kwest apply -f west/ns1-federation.yaml
+    ```
+
+1. Import httpbin to the east cluster:
+
+    ```shell
+    keast apply -f east/mesh-federation.yaml
+    keast apply -f east/ns2-federation.yaml
     ```
 
 #### Enable egress gateway:

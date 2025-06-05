@@ -55,6 +55,7 @@ spec:
   - number: {{ $port.number }}
     name: {{ $port.name }}
     protocol: {{ $port.protocol }}
+    targetPort: {{ $port.targetPort }}
   {{- end }}
   resolution: STATIC
   workloadSelector:

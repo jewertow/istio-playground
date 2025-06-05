@@ -48,6 +48,7 @@ metadata:
 spec:
   exportTo:
   - {{ $.Values.global.configNamespace }}
+  - "."
   hosts:
   - {{ $export.hostname }}
   location: MESH_INTERNAL

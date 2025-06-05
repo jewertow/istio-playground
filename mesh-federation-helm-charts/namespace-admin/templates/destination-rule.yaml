@@ -7,7 +7,7 @@ apiVersion: networking.istio.io/v1
 kind: DestinationRule
 metadata:
   name: import-{{ printf "%s" $hostname | replace "." "-" }}-{{ $port.number }}
-  namespace: istio-system
+  namespace: {{ $.Release.Namespace }}
 spec:
   exportTo:
   - "."

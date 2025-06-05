@@ -1,4 +1,6 @@
-{{- range $export := .Values.global.local.export }}
+{{- $local := get .Values.global "local" | default dict }}
+{{- $exports := get $local "export" | default list }}
+{{- range $export := $exports }}
 {{- range $port := $export.ports }}
 {{- $host := include "hostname.withPort" (dict "hostname" $export.hostname "port" $port) }}
 ---

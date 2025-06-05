@@ -46,9 +46,6 @@ metadata:
   name: export-{{ printf "%s" $export.hostname | replace "." "-" | trunc 253 }}
   namespace: {{ $.Release.Namespace }}
 spec:
-  exportTo:
-  - {{ $.Values.global.configNamespace }}
-  - "."
   hosts:
   - {{ $export.hostname }}
   location: MESH_INTERNAL

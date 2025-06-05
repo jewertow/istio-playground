@@ -1,0 +1,21 @@
+{{- range $idx, $svc := .Values.import }}
+{{- $hostname := required (printf "import[%d].hostname is required" $idx) $svc.hostname }}
+{{- $ports := $svc.ports | default $.Values.global.defaultServicePorts }}
+{{- range $port := $ports }}
+{{- $sni := include "hostname.withPort" (dict "hostname" $hostname "port" $port.number) }}
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: import-{{ printf "%s" $hostname | replace "." "-" }}-{{ $port.number }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  exportTo:
+  - "."
+  host: {{ $hostname }}
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+      sni: {{ $sni }}
+---
+{{- end }}
+{{- end }}

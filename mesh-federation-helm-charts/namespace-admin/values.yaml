@@ -1,0 +1,19 @@
+global:
+  configNamespace: istio-system
+  meshes: []
+
+import: []
+#- hostname: payments.mesh.global
+#  ports:
+#  - number: 80
+#    name: http
+#    protocol: HTTP
+
+export: []
+#- hostname: payments.mesh.global
+#  ports:
+#  - number: 443
+#    name: https
+#    protocol: HTTPS
+#  labelSelector:
+#    app: search

@@ -1,0 +1,27 @@
+{{- $selector := .Values.global.gatewaySelector | default (dict "app" "federation-ingress-gateway") }}
+{{- $port := .Values.global.port | default 15443 }}
+{{- $local := get .Values.global "local" | default dict }}
+{{- $exports := get $local "export" | default list }}
+{{- if gt (len $exports) 0 }}
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: federation-ingress-gateway
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    {{- range $k, $v := $selector }}
+    {{ $k }}: {{ $v }}
+    {{- end }}
+  servers:
+  - port:
+      number: {{ $port }}
+      name: tls-passthrough
+      protocol: TLS
+    tls:
+      mode: AUTO_PASSTHROUGH
+    hosts:
+    {{- range $svc := $exports }}
+    - {{ $svc.hostname }}
+    {{- end }}
+{{- end }}

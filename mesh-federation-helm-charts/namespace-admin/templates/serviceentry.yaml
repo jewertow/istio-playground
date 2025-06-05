@@ -1,0 +1,67 @@
+{{- range $idx, $svc := .Values.import }}
+{{- $hostname := required (printf "import[%d].hostname is required" $idx) $svc.hostname }}
+{{- $resName := printf "import-%s" (replace $hostname "." "-" ) }}
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: import-{{ printf "%s" $svc.hostname | replace "." "-" | trunc 253 }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  exportTo:
+  - "."
+  hosts:
+  - {{ $hostname }}
+  ports:
+  {{- $ports := $svc.ports | default $.Values.global.defaultServicePorts }}
+  {{- range $port := $ports }}
+  - number: {{ $port.number }}
+    name: {{ $port.name }}
+    protocol: {{ $port.protocol }}
+  {{- end }}
+  location: MESH_INTERNAL
+  resolution: DNS
+  endpoints:
+  {{- range $mesh := $.Values.global.remote }}
+  {{- if has $hostname $mesh.importedServices }}
+  {{- range $addr := $mesh.addresses }}
+  - address: {{ $addr }}
+    ports:
+    {{- range $port := $svc.ports }}
+      {{ $port.name }}: {{ $mesh.port }}
+    {{- end }}
+    network: {{ $mesh.network }}
+    locality: {{ $mesh.locality }}
+    labels:
+      security.istio.io/tlsMode: istio
+      mesh: {{ $mesh.mesh }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
+---
+{{- end }}
+{{- range $export := .Values.export }}
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: export-{{ printf "%s" $export.hostname | replace "." "-" | trunc 253 }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  hosts:
+  - {{ $export.hostname }}
+  location: MESH_INTERNAL
+  ports:
+  {{- $ports := $export.ports | default $.Values.global.defaultServicePorts }}
+  {{- range $port := $ports }}
+  - number: {{ $port.number }}
+    name: {{ $port.name }}
+    protocol: {{ $port.protocol }}
+    targetPort: {{ $port.targetPort }}
+  {{- end }}
+  resolution: STATIC
+  workloadSelector:
+    labels:
+      {{- with $export.labelSelector }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+---
+{{- end }}

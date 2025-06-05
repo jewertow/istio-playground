@@ -1,0 +1,30 @@
+{{- $local := get .Values.global "local" | default dict }}
+{{- $exports := get $local "export" | default list }}
+{{- range $export := $exports }}
+{{- range $port := $export.ports }}
+{{- $host := include "hostname.withPort" (dict "hostname" $export.hostname "port" $port) }}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: export-{{ printf "%s" $export.hostname | replace "." "-" }}-{{ $port }}
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      app: federation-ingress-gateway
+  configPatches:
+  - applyTo: FILTER_CHAIN
+    match:
+      listener:
+        name: "0.0.0.0_15443"
+        filterChain:
+          sni: "outbound_.{{ $port }}_._.{{ $export.hostname }}"
+    patch:
+      operation: MERGE
+      value:
+        filter_chain_match:
+          server_names:
+          - "{{ $host }}"
+{{- end }}
+{{- end }}

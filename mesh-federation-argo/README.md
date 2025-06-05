@@ -124,16 +124,3 @@
     keast apply -f egress-gateway.yaml
     kwest apply -f egress-gateway.yaml
     ```
-
-```yaml
-  sources:
-  - repoURL: https://github.com/openshift-service-mesh/istio
-    path: manifests/charts/gateway
-    targetRevision: release-1.24
-    helm:
-      valueFiles:
-      - $values/west/federation-ingress-gateway-values.yaml
-  - repoURL: https://github.com/jewertow/mesh-federation-argo-mesh-admin
-    targetRevision: master
-    ref: values
-```

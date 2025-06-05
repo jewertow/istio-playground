@@ -9,6 +9,8 @@ metadata:
   name: import-{{ printf "%s" $hostname | replace "." "-" }}-{{ $port.number }}
   namespace: istio-system
 spec:
+  exportTo:
+  - "."
   host: {{ $hostname }}
   trafficPolicy:
     tls:

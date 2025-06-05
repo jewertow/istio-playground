@@ -107,7 +107,7 @@
 
     ```shell
     keast apply -f east/mesh-federation.yaml
-    keast apply -f east/ns2-federation.yaml
+    keast apply -f east/ns1-federation.yaml
     ```
 
 1. Send a test request to the imported service:

@@ -2,6 +2,7 @@
 {{- $port := .Values.global.port | default 15443 }}
 {{- $local := get .Values.global "local" | default dict }}
 {{- $exports := get $local "export" | default list }}
+{{- if gt (len $exports) 0 }}
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
@@ -23,3 +24,4 @@ spec:
     {{- range $svc := $exports }}
     - {{ $svc.hostname }}
     {{- end }}
+{{- end }}

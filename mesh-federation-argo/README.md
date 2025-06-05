@@ -100,7 +100,7 @@
 
     ```shell
     kwest apply -f west/mesh-federation.yaml
-    kwest apply -f west/ns1-federation.yaml
+    kwest apply -f west/ns2-federation.yaml
     ```
 
 1. Import httpbin to the east cluster:

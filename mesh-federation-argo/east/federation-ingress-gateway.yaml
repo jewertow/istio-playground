@@ -19,7 +19,7 @@ spec:
         service:
           type: ClusterIP
           ports:
-          - name: tls
+          - name: tls-passthrough
             port: 15443
             targetPort: 15443
         env:

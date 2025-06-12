@@ -1,4 +1,4 @@
-# Post-quantum key exchange in Istio
+# Post-quantum cryptography in Istio
 
 ## Setup environment
 
@@ -126,7 +126,7 @@
    kind: IstioOperator
    spec:
      hub: quay.io/jewertow
-     tag: post-quantum-safe-kx
+     tag: pqc
      profile: ambient
      components:
        ingressGateways:
@@ -140,10 +140,10 @@
          variant: ""
        pilot:
          env:
-           COMPLIANCE_POLICY: "post-quantum-safe-kx"
+           COMPLIANCE_POLICY: "pqc"
        ztunnel:
          env:
-           COMPLIANCE_POLICY: "post-quantum-safe-kx"
+           COMPLIANCE_POLICY: "pqc"
    EOF
    ./istio-1.26.0/bin/istioctl install -f istio.yaml -y
    ```

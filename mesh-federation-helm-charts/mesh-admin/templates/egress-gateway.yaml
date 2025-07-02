@@ -1,0 +1,98 @@
+{{- if .Values.global.egressGateway.enabled }}
+{{- $remotes := .Values.global.remote | default list }}
+{{- if gt (len $remotes) 0 }}
+
+{{/* Build a map of services to list of meshes that have them */}}
+{{- $serviceToMeshes := dict }}
+{{- range $mesh := $remotes }}
+{{- range $svc := $mesh.importedServices }}
+{{- $meshList := index $serviceToMeshes $svc | default list }}
+{{- $_ := set $serviceToMeshes $svc (append $meshList $mesh.mesh) }}
+{{- end }}
+{{- end }}
+
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: istio-eastwestgateway-egress
+  namespace: {{ .Values.global.configNamespace }}
+spec:
+  selector:
+    {{- range $k, $v := .Values.global.egressGateway.selector }}
+    {{ $k }}: {{ $v }}
+    {{- end }}
+  servers:
+    - port:
+        number: {{ .Values.global.egressGateway.port }}
+        name: tls
+        protocol: TLS
+      hosts:
+    {{- range $svc, $meshList := $serviceToMeshes }}
+        - "*.{{ $svc }}"
+    {{- end }}
+      tls:
+        mode: PASSTHROUGH
+---
+{{- range $meshIdx, $mesh := $remotes }}
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: ingress-{{ $mesh.mesh }}
+  namespace: {{ $.Values.global.configNamespace }}
+spec:
+  exportTo:
+    - "."
+  hosts:
+    - ingress.{{ $mesh.mesh }}.global
+  ports:
+    - number: {{ $mesh.port }}
+      name: auto-passthrough-tls
+      protocol: TLS
+  resolution: STATIC
+  location: MESH_INTERNAL
+  endpoints:
+  {{- range $addr := $mesh.addresses }}
+    - address: {{ $addr }}
+      ports:
+        auto-passthrough-tls: {{ $mesh.port }}
+      network: {{ $mesh.network }}
+      locality: {{ $mesh.locality }}
+  {{- end }}
+---
+{{- end }}
+
+{{/* Create VirtualServices for each service, load balancing across all meshes that have it */}}
+{{- range $svc, $meshList := $serviceToMeshes }}
+{{- $numMeshes := len $meshList }}
+{{- $weight := div 100 $numMeshes }}
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: cross-network-egress-{{ printf "%s" $svc | replace "." "-" | trunc 243 }}
+  namespace: {{ $.Values.global.configNamespace }}
+spec:
+  hosts:
+    - "*.{{ $svc }}"
+  gateways:
+    - istio-eastwestgateway-egress
+  tls:
+    - match:
+        - sniHosts:
+            # This rule matches Istio mTLS SNI format, i.e. outbound_.<port>_.<subset>_.<hostname>
+            - "*.{{ $svc }}"
+      route:
+    {{- range $idx, $meshName := $meshList }}
+    {{- range $mesh := $remotes }}
+    {{- if eq $mesh.mesh $meshName }}
+        - destination:
+            host: ingress.{{ $meshName }}.global
+            port:
+              number: {{ $mesh.port }}
+          weight: {{ $weight }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+---
+{{- end }}
+{{- end }}
+{{- end }}

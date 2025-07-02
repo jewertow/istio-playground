@@ -1,11 +1,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ns1-federation
+  name: bookinfo-federation
   namespace: openshift-gitops
 spec:
   destination:
-    namespace: ns1
+    namespace: ns2
     server: https://kubernetes.default.svc
   project: default
   sources:
@@ -14,14 +14,14 @@ spec:
     targetRevision: mesh-federation-helm-charts
     helm:
       valueFiles:
-      - $adminValues/east/global.yaml
-      - $userValues/east/values.yaml
+      - $mesh-admin/values.yaml
+      - $namespace-admin/values.yaml
   - repoURL: https://github.com/jewertow/mesh-federation-argo-mesh-admin
     targetRevision: east-cluster
-    ref: adminValues
+    ref: mesh-admin
   - repoURL: https://github.com/jewertow/mesh-federation-argo-namespace-admin
     targetRevision: east-cluster
-    ref: userValues
+    ref: namespace-admin
   syncPolicy:
     automated:
       prune: true

@@ -14,10 +14,10 @@ spec:
     targetRevision: mesh-federation-helm-charts
     helm:
       valueFiles:
-      - $values/east/global.yaml
+      - $mesh-admin/values.yaml
   - repoURL: https://github.com/jewertow/mesh-federation-argo-mesh-admin
     targetRevision: east-cluster
-    ref: values
+    ref: mesh-admin
   syncPolicy:
     automated:
       prune: true

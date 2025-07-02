@@ -186,7 +186,57 @@ Now, we can import ratings service that was exported from the east cluster.
 1. Import ratings service:
 
    ```shell
-   kcent apply -f central/mesh-federation.yaml 
+   kcent apply -f central/mesh-federation.yaml
+   kcent apply -f central/bookinfo-federation.yaml
+   ```
+
+1. Update productpage to consume imported ratings:
+
+   ```shell
+   kcent patch deployment reviews-v2 -n ns1 \
+     --type='strategic' \
+     -p='{
+       "spec": {
+         "template": {
+           "spec": {
+             "containers": [
+               {
+                 "name": "reviews",
+                 "env": [
+                   {
+                     "name": "RATINGS_HOSTNAME",
+                     "value": "ratings.mesh.global"
+                   }
+                 ]
+               }
+             ]
+           }
+         }
+       }
+     }'
+   ```
+   ```shell
+   kcent patch deployment reviews-v3 -n ns1 \
+     --type='strategic' \
+     -p='{
+       "spec": {
+         "template": {
+           "spec": {
+             "containers": [
+               {
+                 "name": "reviews",
+                 "env": [
+                   {
+                     "name": "RATINGS_HOSTNAME",
+                     "value": "ratings.mesh.global"
+                   }
+                 ]
+               }
+             ]
+           }
+         }
+       }
+     }'
    ```
 
 #### West cluster

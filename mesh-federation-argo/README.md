@@ -51,7 +51,7 @@
    make -f common.mk clean
    ```
 
-### GitOps setup
+### GitOps
 
    Apply permissive RBAC for GitOps operator (only for demo purposes):
 
@@ -61,7 +61,7 @@
    kcent apply -f rbac.yaml
    ```
 
-### Service Mesh setup
+### Service Mesh
 
    ```shell
    keast create namespace istio-cni
@@ -99,6 +99,12 @@
    kcent apply -f central/istio.yaml
    ```
 
+### OpenShift Monitoring
+
+   ```shell
+   kcent apply -f central/user-workload-monitoring.yaml
+   ```
+
 ### Kiali
 
    ```shell
@@ -107,7 +113,7 @@
    kcent apply -f central/kiali.yaml
    ```
 
-### Demo
+## Demo
 
 #### Central cluster
 

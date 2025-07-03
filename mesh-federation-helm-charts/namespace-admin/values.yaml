@@ -1,5 +1,11 @@
 global:
   configNamespace: istio-system
+  egressGateway:
+    enabled: false
+    service:
+      name: istio-egressgateway
+      namespace: istio-system
+    port: 443
   meshes: []
 
 import: []

@@ -22,7 +22,7 @@ spec:
   resolution: DNS
   endpoints:
   {{- if $.Values.global.egressGateway.enabled }}
-  - address: {{ $.Values.global.egressGateway.selector.istio }}.{{ $.Values.global.configNamespace }}.svc.cluster.local
+  - address: {{ $.Values.global.egressGateway.service.name }}.{{ $.Values.global.egressGateway.service.namespace }}.svc.cluster.local
     ports:
     {{- range $port := $ports }}
       {{ $port.name }}: {{ $.Values.global.egressGateway.port }}

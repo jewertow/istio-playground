@@ -1,3 +1,4 @@
+{{- if .Values.global.useOpenshiftRouter }}
 {{- $local := get .Values.global "local" | default dict }}
 {{- $exports := get $local "export" | default list }}
 {{- range $export := $exports }}
@@ -26,5 +27,6 @@ spec:
         filter_chain_match:
           server_names:
           - "{{ $host }}"
+{{- end }}
 {{- end }}
 {{- end }}

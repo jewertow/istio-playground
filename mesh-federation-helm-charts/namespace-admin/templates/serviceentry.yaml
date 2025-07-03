@@ -21,12 +21,19 @@ spec:
   location: MESH_INTERNAL
   resolution: DNS
   endpoints:
+  {{- if $.Values.global.egressGateway.enabled }}
+  - address: {{ $.Values.global.egressGateway.service.name }}.{{ $.Values.global.egressGateway.service.namespace }}.svc.cluster.local
+    ports:
+    {{- range $port := $ports }}
+      {{ $port.name }}: {{ $.Values.global.egressGateway.port }}
+    {{- end }}
+  {{- else }}
   {{- range $mesh := $.Values.global.remote }}
   {{- if has $hostname $mesh.importedServices }}
   {{- range $addr := $mesh.addresses }}
   - address: {{ $addr }}
     ports:
-    {{- range $port := $svc.ports }}
+    {{- range $port := $ports }}
       {{ $port.name }}: {{ $mesh.port }}
     {{- end }}
     network: {{ $mesh.network }}
@@ -34,6 +41,7 @@ spec:
     labels:
       security.istio.io/tlsMode: istio
       mesh: {{ $mesh.mesh }}
+  {{- end }}
   {{- end }}
   {{- end }}
   {{- end }}
@@ -55,7 +63,9 @@ spec:
   - number: {{ $port.number }}
     name: {{ $port.name }}
     protocol: {{ $port.protocol }}
+    {{- if $port.targetPort }}
     targetPort: {{ $port.targetPort }}
+    {{- end }}
   {{- end }}
   resolution: STATIC
   workloadSelector:

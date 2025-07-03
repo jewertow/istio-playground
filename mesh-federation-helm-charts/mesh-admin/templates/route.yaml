@@ -1,3 +1,4 @@
+{{- if .Values.global.useOpenshiftRouter }}
 {{- $local := get .Values.global "local" | default dict }}
 {{- $exports := get $local "export" | default list }}
 {{- range $export := $exports }}
@@ -20,5 +21,6 @@ spec:
   tls:
     termination: passthrough
   wildcardPolicy: None
+{{- end }}
 {{- end }}
 {{- end }}

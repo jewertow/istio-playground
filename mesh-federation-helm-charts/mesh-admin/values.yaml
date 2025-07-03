@@ -1,9 +1,13 @@
 global:
   configNamespace: istio-system
+  useOpenshiftRouter: false       # Set to true if remote meshes use OpenShift router for ingress
   egressGateway:
     enabled: false
     selector:
       istio: istio-egressgateway
+    service:
+      name: istio-egressgateway
+      namespace: istio-system
     port: 443
   # Remote meshes configuration - defines available remote meshes and their services
   remote: []

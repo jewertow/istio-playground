@@ -78,8 +78,15 @@ spec:
   tls:
     - match:
         - sniHosts:
-            # This rule matches Istio mTLS SNI format, i.e. outbound_.<port>_.<subset>_.<hostname>
+        {{- if $.Values.global.useOpenshiftRouter }}
+            {{- $ports := $.Values.global.defaultServicePorts | default list }}
+            {{- range $port := $ports }}
+            {{- $sni := include "hostname.withPort" (dict "hostname" $svc "port" $port.number) }}
+            - "{{ $sni }}"
+            {{- end }}
+        {{- else }}
             - "*.{{ $svc }}"
+        {{- end }}
       route:
     {{- range $idx, $meshName := $meshList }}
     {{- range $mesh := $remotes }}

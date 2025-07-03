@@ -115,7 +115,39 @@
 
 ## Demo
 
-#### Central cluster
+### East cluster
+
+1. Deploy and export `ratings` service:
+
+   ```shell
+   keast create namespace ns2
+   keast label namespace ns2 istio-injection=enabled
+   keast apply -n ns2 -l account=ratings -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml
+   keast apply -n ns2 -l app=ratings -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml
+
+   keast apply -f east/federation-ingress-gateway.yaml
+   keast apply -f east/mesh-federation.yaml
+   keast apply -f east/namespace-federation.yaml
+   ```
+
+### West cluster
+
+1. Deploy and export `details` and `ratings` services:
+
+   ```shell
+   kwest create namespace ns3
+   kwest label namespace ns3 istio-injection=enabled
+   kwest apply -n ns3 -l account=details -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml
+   kwest apply -n ns3 -l app=details -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml
+   kwest apply -n ns3 -l account=ratings -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml
+   kwest apply -n ns3 -l app=ratings -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml
+   
+   kwest apply -f west/federation-ingress-gateway.yaml
+   kwest apply -f west/mesh-federation.yaml
+   kwest apply -f west/bookinfo-federation.yaml
+   ```
+
+### Central cluster
 
 This cluster will import services from east and west clusters.
 
@@ -126,70 +158,30 @@ This cluster will import services from east and west clusters.
    kcent apply -f central/istio-ingressgateway.yaml
    ```
 
-1. Deploy applications in the central cluster:
-
-    ```shell
-    kcent create namespace ns1
-    kcent label namespace ns1 istio-injection=enabled
-    kcent apply -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/networking/bookinfo-gateway.yaml -n ns1
-    kcent apply -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml -n ns1
-    kcent apply -f central/pod-monitor.yaml -n ns1
-    ```
-    ```shell
-    kcent patch gateway bookinfo-gateway -n ns1 --type='json' \
-      -p='[
-        {
-          "op": "replace",
-          "path": "/spec/servers/0/port/number",
-          "value": 80
-        }
-      ]'
-    ```
-
-    Send a test request to make sure that everything is installed correctly:
-    ```shell
-    HOST=$(kcent get routes istio-ingressgateway -n istio-system -o jsonpath='{.spec.host}')
-    curl -v http://$HOST/productpage > /dev/null
-    ```
-
-#### East cluster
-
-This cluster only exports `ratings` service.
-
-1. Deploy federation ingress gateway and allow to export ratings service:
+1. Deploy productpage and reviews:
 
    ```shell
-   keast apply -f east/federation-ingress-gateway.yaml
-   keast apply -f east/mesh-federation.yaml
+   kcent create namespace ns1
+   kcent label namespace ns1 istio-injection=enabled
+   kcent apply -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/networking/bookinfo-gateway.yaml -n ns1
+   kcent apply -l app=productpage -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml -n ns1
+   kcent apply -l account=productpage -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml -n ns1
+   kcent apply -l app=reviews -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml -n ns1
+   kcent apply -l account=reviews -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml -n ns1
+   kcent apply -f central/pod-monitor.yaml -n ns1
    ```
-
-1. Deploy ratings app in the east cluster:
-
    ```shell
-   keast create namespace ns2
-   keast label namespace ns2 istio-injection=enabled
-   keast apply -n ns2 -l account=ratings -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml
-   keast apply -n ns2 -l app=ratings -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml
+   kcent patch gateway bookinfo-gateway -n ns1 --type='json' \
+     -p='[
+       {
+         "op": "replace",
+         "path": "/spec/servers/0/port/number",
+         "value": 80
+       }
+     ]'
    ```
 
-1. Export ratings service:
-
-   ```shell
-   keast apply -f east/namespace-federation.yaml
-   ```
-
-#### Central cluster
-
-Now, we can import ratings service that was exported from the east cluster.
-
-1. Delete local ratings service:
-
-   ```shell
-   kcent delete -n ns1 -l account=ratings -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml
-   kcent delete -n ns1 -l app=ratings -f https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/samples/bookinfo/platform/kube/bookinfo.yaml
-   ```
-
-1. Import ratings service:
+1. Enable mesh federation and import remote services:
 
    ```shell
    kcent apply -f central/mesh-federation.yaml
@@ -198,6 +190,29 @@ Now, we can import ratings service that was exported from the east cluster.
 
 1. Update productpage to consume imported ratings:
 
+   ```shell
+   kcent patch deployment productpage-v1 -n ns1 \
+     --type='strategic' \
+     -p='{
+       "spec": {
+         "template": {
+           "spec": {
+             "containers": [
+               {
+                 "name": "productpage",
+                 "env": [
+                   {
+                     "name": "DETAILS_HOSTNAME",
+                     "value": "details.mesh.global"
+                   }
+                 ]
+               }
+             ]
+           }
+         }
+       }
+     }'
+   ```
    ```shell
    kcent patch deployment reviews-v2 -n ns1 \
      --type='strategic' \
@@ -245,33 +260,9 @@ Now, we can import ratings service that was exported from the east cluster.
      }'
    ```
 
-#### West cluster
-   
-1. Export httpbin from the west cluster:
+1. Send requests in a loop:
 
-    ```shell
-    kwest apply -f west/mesh-federation.yaml
-    kwest apply -f west/ns2-federation.yaml
-    ```
-
-1. Import httpbin to the east cluster:
-
-    ```shell
-    keast apply -f east/mesh-federation.yaml
-    keast apply -f east/ns1-federation.yaml
-    ```
-
-1. Send a test request to the imported service:
-
-    ```shell
-    keast exec deploy/sleep -n ns1 -c sleep -- curl -v httpbin-service.mesh.global:8000/headers
-    ```
-
-#### Enable egress gateway:
-
-1. Deploy egress gateway:
-
-    ```shell
-    keast apply -f egress-gateway.yaml
-    kwest apply -f egress-gateway.yaml
-    ```
+   ```shell
+   HOST=$(kcent get routes istio-ingressgateway -n istio-system -o jsonpath='{.spec.host}')
+   while true; do curl -v http://$HOST/productpage > /dev/null; sleep 2; done
+   ```

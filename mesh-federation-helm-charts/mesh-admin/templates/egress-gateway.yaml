@@ -48,7 +48,8 @@ spec:
     - number: {{ $mesh.port }}
       name: auto-passthrough-tls
       protocol: TLS
-  resolution: STATIC
+  {{/* TODO: resolution should depend on the address format - DNS for hostnames and STATIC for IP addresses */}}
+  resolution: DNS
   location: MESH_INTERNAL
   endpoints:
   {{- range $addr := $mesh.addresses }}

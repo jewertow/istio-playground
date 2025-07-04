@@ -269,4 +269,4 @@ This cluster will import services from east and west clusters.
 
 #### Kiali view
 
-[kiali-view](mesh-federation-argo/img/kiali-view.png)
+![kiali-view](mesh-federation-argo/img/kiali-view.png)

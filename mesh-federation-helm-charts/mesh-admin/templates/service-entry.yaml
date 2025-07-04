@@ -25,7 +25,9 @@ spec:
     ports:
       auto-passthrough-tls: {{ $mesh.port }}
     network: {{ $mesh.network }}
+    {{- if $mesh.locality }}
     locality: {{ $mesh.locality }}
+    {{- end }}
   {{- end }}
 ---
 {{- end }}

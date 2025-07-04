@@ -266,3 +266,7 @@ This cluster will import services from east and west clusters.
    HOST=$(kcent get routes istio-ingressgateway -n istio-system -o jsonpath='{.spec.host}')
    while true; do curl -v http://$HOST/productpage > /dev/null; sleep 2; done
    ```
+
+#### Kiali view
+
+[kiali-view](mesh-federation-argo/img/kiali-view.png)

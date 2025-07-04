@@ -1,0 +1,55 @@
+{{- if .Values.global.egressGateway.enabled }}
+{{- $remotes := .Values.global.remote | default list }}
+{{- if gt (len $remotes) 0 }}
+
+{{/* Build a map of services to list of meshes that have them */}}
+{{- $serviceToMeshes := dict }}
+{{- range $mesh := $remotes }}
+{{- range $svc := $mesh.importedServices }}
+{{- $meshList := index $serviceToMeshes $svc | default list }}
+{{- $_ := set $serviceToMeshes $svc (append $meshList $mesh.mesh) }}
+{{- end }}
+{{- end }}
+
+{{/* Create VirtualServices for each service, load balancing across all meshes that have it */}}
+{{- range $svc, $meshList := $serviceToMeshes }}
+{{- $numMeshes := len $meshList }}
+{{- $weight := div 100 $numMeshes }}
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: cross-network-egress-{{ printf "%s" $svc | replace "." "-" | trunc 243 }}
+  namespace: {{ $.Values.global.configNamespace }}
+spec:
+  hosts:
+  - "*.{{ $svc }}"
+  gateways:
+  - federation-egress-gateway
+  tls:
+  - match:
+    - sniHosts:
+    {{- if $.Values.global.useOpenshiftRouter }}
+      {{- $ports := $.Values.global.defaultServicePorts | default list }}
+      {{- range $port := $ports }}
+      {{- $sni := include "hostname.withPort" (dict "hostname" $svc "port" $port.number) }}
+      - "{{ $sni }}"
+      {{- end }}
+    {{- else }}
+      - "*.{{ $svc }}"
+    {{- end }}
+    route:
+    {{- range $idx, $meshName := $meshList }}
+    {{- range $mesh := $remotes }}
+    {{- if eq $mesh.mesh $meshName }}
+    - destination:
+        host: ingress.{{ $meshName }}.global
+        port:
+          number: {{ $mesh.port }}
+      weight: {{ $weight }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+---
+{{- end }}
+{{- end }}
+{{- end }}

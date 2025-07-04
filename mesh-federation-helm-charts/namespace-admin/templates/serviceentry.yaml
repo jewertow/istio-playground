@@ -37,7 +37,9 @@ spec:
       {{ $port.name }}: {{ $mesh.port }}
     {{- end }}
     network: {{ $mesh.network }}
+    {{- if $mesh.locality }}
     locality: {{ $mesh.locality }}
+    {{- end }}
     labels:
       security.istio.io/tlsMode: istio
       mesh: {{ $mesh.mesh }}

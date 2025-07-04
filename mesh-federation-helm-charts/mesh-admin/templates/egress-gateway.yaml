@@ -11,35 +11,6 @@
 {{- end }}
 {{- end }}
 
-{{- range $meshIdx, $mesh := $remotes }}
-apiVersion: networking.istio.io/v1beta1
-kind: ServiceEntry
-metadata:
-  name: ingress-{{ $mesh.mesh }}
-  namespace: {{ $.Values.global.configNamespace }}
-spec:
-  exportTo:
-    - "."
-  hosts:
-    - ingress.{{ $mesh.mesh }}.global
-  ports:
-    - number: {{ $mesh.port }}
-      name: auto-passthrough-tls
-      protocol: TLS
-  {{/* TODO: resolution should depend on the address format - DNS for hostnames and STATIC for IP addresses */}}
-  resolution: DNS
-  location: MESH_INTERNAL
-  endpoints:
-  {{- range $addr := $mesh.addresses }}
-    - address: {{ $addr }}
-      ports:
-        auto-passthrough-tls: {{ $mesh.port }}
-      network: {{ $mesh.network }}
-      locality: {{ $mesh.locality }}
-  {{- end }}
----
-{{- end }}
-
 {{/* Create VirtualServices for each service, load balancing across all meshes that have it */}}
 {{- range $svc, $meshList := $serviceToMeshes }}
 {{- $numMeshes := len $meshList }}

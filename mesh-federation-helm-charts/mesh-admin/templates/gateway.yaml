@@ -25,3 +25,41 @@ spec:
     - {{ $svc.hostname }}
     {{- end }}
 {{- end }}
+
+{{/* Egress Gateway for importing services from remote meshes */}}
+{{- if .Values.global.egressGateway.enabled }}
+{{- $remotes := .Values.global.remote | default list }}
+{{- if gt (len $remotes) 0 }}
+
+{{/* Build a map of services to list of meshes that have them */}}
+{{- $serviceToMeshes := dict }}
+{{- range $mesh := $remotes }}
+{{- range $svc := $mesh.importedServices }}
+{{- $meshList := index $serviceToMeshes $svc | default list }}
+{{- $_ := set $serviceToMeshes $svc (append $meshList $mesh.mesh) }}
+{{- end }}
+{{- end }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: federation-egress-gateway
+  namespace: {{ .Values.global.configNamespace }}
+spec:
+  selector:
+    {{- range $k, $v := .Values.global.egressGateway.selector }}
+    {{ $k }}: {{ $v }}
+    {{- end }}
+  servers:
+  - port:
+      number: {{ .Values.global.egressGateway.port }}
+      name: tls
+      protocol: TLS
+    hosts:
+    {{- range $svc, $meshList := $serviceToMeshes }}
+    - "*.{{ $svc }}"
+    {{- end }}
+    tls:
+      mode: PASSTHROUGH
+{{- end }}
+{{- end }}

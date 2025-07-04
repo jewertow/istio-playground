@@ -11,28 +11,6 @@
 {{- end }}
 {{- end }}
 
-apiVersion: networking.istio.io/v1beta1
-kind: Gateway
-metadata:
-  name: federation-egress-gateway
-  namespace: {{ .Values.global.configNamespace }}
-spec:
-  selector:
-    {{- range $k, $v := .Values.global.egressGateway.selector }}
-    {{ $k }}: {{ $v }}
-    {{- end }}
-  servers:
-    - port:
-        number: {{ .Values.global.egressGateway.port }}
-        name: tls
-        protocol: TLS
-      hosts:
-    {{- range $svc, $meshList := $serviceToMeshes }}
-        - "*.{{ $svc }}"
-    {{- end }}
-      tls:
-        mode: PASSTHROUGH
----
 {{- range $meshIdx, $mesh := $remotes }}
 apiVersion: networking.istio.io/v1beta1
 kind: ServiceEntry

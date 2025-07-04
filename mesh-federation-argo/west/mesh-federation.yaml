@@ -11,7 +11,7 @@ spec:
   sources:
   - repoURL: https://github.com/jewertow/istio-playground
     path: mesh-federation-helm-charts/mesh-admin
-    targetRevision: mesh-federation-helm-charts
+    targetRevision: master
     helm:
       valueFiles:
       - $mesh-admin/values.yaml

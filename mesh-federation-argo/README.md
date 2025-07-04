@@ -127,7 +127,7 @@
 
    keast apply -f east/federation-ingress-gateway.yaml
    keast apply -f east/mesh-federation.yaml
-   keast apply -f east/namespace-federation.yaml
+   keast apply -f east/bookinfo-federation.yaml
    ```
 
 ### West cluster

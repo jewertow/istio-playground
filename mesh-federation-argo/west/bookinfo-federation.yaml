@@ -1,27 +1,27 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ns1-federation
+  name: bookinfo-federation
   namespace: openshift-gitops
 spec:
   destination:
-    namespace: ns1
+    namespace: ns3
     server: https://kubernetes.default.svc
   project: default
   sources:
   - repoURL: https://github.com/jewertow/istio-playground
     path: mesh-federation-helm-charts/namespace-admin
-    targetRevision: mesh-federation-helm-charts
+    targetRevision: master
     helm:
       valueFiles:
-      - $adminValues/east/global.yaml
-      - $userValues/east/values.yaml
+      - $mesh-admin/values.yaml
+      - $namespace-admin/values.yaml
   - repoURL: https://github.com/jewertow/mesh-federation-argo-mesh-admin
-    targetRevision: east-cluster
-    ref: adminValues
+    targetRevision: west-cluster
+    ref: mesh-admin
   - repoURL: https://github.com/jewertow/mesh-federation-argo-namespace-admin
-    targetRevision: east-cluster
-    ref: userValues
+    targetRevision: west-cluster
+    ref: namespace-admin
   syncPolicy:
     automated:
       prune: true

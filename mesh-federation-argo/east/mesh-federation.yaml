@@ -11,13 +11,13 @@ spec:
   sources:
   - repoURL: https://github.com/jewertow/istio-playground
     path: mesh-federation-helm-charts/mesh-admin
-    targetRevision: mesh-federation-helm-charts
+    targetRevision: master
     helm:
       valueFiles:
-      - $values/east/global.yaml
+      - $mesh-admin/values.yaml
   - repoURL: https://github.com/jewertow/mesh-federation-argo-mesh-admin
     targetRevision: east-cluster
-    ref: values
+    ref: mesh-admin
   syncPolicy:
     automated:
       prune: true

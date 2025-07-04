@@ -16,7 +16,7 @@ spec:
       valueFiles:
       - $mesh-admin/values.yaml
   - repoURL: https://github.com/jewertow/mesh-federation-argo-mesh-admin
-    targetRevision: west-cluster
+    targetRevision: central-cluster
     ref: mesh-admin
   syncPolicy:
     automated:

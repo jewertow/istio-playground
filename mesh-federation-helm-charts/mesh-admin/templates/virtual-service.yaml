@@ -22,30 +22,30 @@ metadata:
   namespace: {{ $.Values.global.configNamespace }}
 spec:
   hosts:
-    - "*.{{ $svc }}"
+  - "*.{{ $svc }}"
   gateways:
-    - federation-egress-gateway
+  - federation-egress-gateway
   tls:
-    - match:
-        - sniHosts:
-        {{- if $.Values.global.useOpenshiftRouter }}
-            {{- $ports := $.Values.global.defaultServicePorts | default list }}
-            {{- range $port := $ports }}
-            {{- $sni := include "hostname.withPort" (dict "hostname" $svc "port" $port.number) }}
-            - "{{ $sni }}"
-            {{- end }}
-        {{- else }}
-            - "*.{{ $svc }}"
-        {{- end }}
-      route:
+  - match:
+    - sniHosts:
+    {{- if $.Values.global.useOpenshiftRouter }}
+      {{- $ports := $.Values.global.defaultServicePorts | default list }}
+      {{- range $port := $ports }}
+      {{- $sni := include "hostname.withPort" (dict "hostname" $svc "port" $port.number) }}
+      - "{{ $sni }}"
+      {{- end }}
+    {{- else }}
+      - "*.{{ $svc }}"
+    {{- end }}
+    route:
     {{- range $idx, $meshName := $meshList }}
     {{- range $mesh := $remotes }}
     {{- if eq $mesh.mesh $meshName }}
-        - destination:
-            host: ingress.{{ $meshName }}.global
-            port:
-              number: {{ $mesh.port }}
-          weight: {{ $weight }}
+    - destination:
+        host: ingress.{{ $meshName }}.global
+        port:
+          number: {{ $mesh.port }}
+      weight: {{ $weight }}
     {{- end }}
     {{- end }}
     {{- end }}

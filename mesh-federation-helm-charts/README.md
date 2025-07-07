@@ -11,6 +11,8 @@ This solution provides a **two-tier architecture** for managing mesh federation:
 
 This architecture enables mesh administrators to control what is exported from or imported to the cluster, while allowing application developers to control imports into their namespaces and configure the services they wish to export.
 
+![architecture](img/architecture.svg)
+
 ### mesh-admin (Infrastructure Layer)
 Manages **cluster-level mesh federation infrastructure** including:
 - Ingress gateway configuration for exporting services to remote meshes

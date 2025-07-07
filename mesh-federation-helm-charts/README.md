@@ -34,6 +34,8 @@ Manages **namespace-level service imports and exports**:
 **Purpose**: Import/export local services
 **Dependencies**: Inherits configuration from `mesh-admin` through `global` values
 
+![architecture](img/architecture.svg)
+
 ## How the Charts Work Together
 
 The resource created by the `namespace-admin` chart **depend on** the resources created by the `mesh-admin` chart, so values for the `namespace-admin` should always be merged with values for the `mesh-admin`.

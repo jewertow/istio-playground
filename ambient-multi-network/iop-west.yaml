@@ -1,0 +1,18 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  hub: quay.io/jewertow
+  tag: release-1.27
+  profile: ambient
+  meshConfig:
+    accessLogFile: /dev/stdout
+  values:
+    global:
+      meshID: mesh
+      multiCluster:
+        clusterName: west
+      network: west-network
+      variant: ""
+    pilot:
+      env:
+        AMBIENT_ENABLE_MULTI_NETWORK: "true"

@@ -1,5 +1,13 @@
 ## Ambient multi-cluster
 
+### Download Istio 1.27
+
+```shell
+container_id=$(docker create gcr.io/istio-testing/istioctl:1.27-dev)
+docker cp $container_id:/usr/local/bin/istioctl .
+docker rm $container_id
+```
+
 ### Setup clusters
 
 ```shell
@@ -10,10 +18,10 @@ curl -s https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.26/sa
 ```shell
 kind get kubeconfig --name east > east.kubeconfig
 alias keast="KUBECONFIG=$(pwd)/east.kubeconfig kubectl"
-alias istioctl-east="KUBECONFIG=$(pwd)/east.kubeconfig istioctl"
+alias istioctl-east="KUBECONFIG=$(pwd)/east.kubeconfig $(pwd)/istioctl"
 kind get kubeconfig --name west > west.kubeconfig
 alias kwest="KUBECONFIG=$(pwd)/west.kubeconfig kubectl"
-alias istioctl-west="KUBECONFIG=$(pwd)/west.kubeconfig istioctl"
+alias istioctl-west="KUBECONFIG=$(pwd)/west.kubeconfig $(pwd)/istioctl"
 ```
 
 ### Configure certificates

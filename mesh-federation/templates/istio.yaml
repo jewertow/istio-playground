@@ -1,7 +1,5 @@
 apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
-metadata:
-  name: control-plane
 spec:
   profile: minimal
   meshConfig:
@@ -9,74 +7,7 @@ spec:
     defaultConfig:
       proxyMetadata:
         ISTIO_META_DNS_CAPTURE: "true"
-        ISTIO_META_DNS_AUTO_ALLOCATE: "true"
-    {{- if not $.Values.commonTrustDomain }}
-    trustDomain: {{ $.Values.localCluster }}.local
-    trustDomainAliases:
-    - {{ $.Values.remoteCluster }}.local
-    {{- end }}
   values:
-    global:
-      meshID: {{ $.Values.localCluster }}-mesh
-      multiCluster:
-        clusterName: {{ $.Values.localCluster }}
-      network: {{ $.Values.localCluster }}-network
-      {{- if $.Values.debug }}
-      logging:
-        level: "all:debug"
-      {{- end }}
-  components:
-    {{- if $.Values.eastwestIngressEnabled }}
-    ingressGateways:
-    - name: istio-eastwestgateway
-      label:
-        istio: eastwestgateway
-        app: istio-eastwestgateway
-        topology.istio.io/network: {{ $.Values.localCluster }}-network
-      enabled: true
-      k8s:
-        env:
-        - name: ISTIO_META_REQUESTED_NETWORK_VIEW
-          value: {{ $.Values.localCluster }}-network
-        service:
-          ports:
-          - name: status-port
-            port: 15021
-            targetPort: 15021
-          - name: tls
-            port: 15443
-            targetPort: 15443
-          - name: tls-istiod
-            port: 15012
-            targetPort: 15012
-          - name: tls-webhook
-            port: 15017
-            targetPort: 15017
-    {{- end }}
-    {{- if $.Values.eastwestEgressEnabled }}
-    egressGateways:
-    - name: istio-eastwestgateway-egress
-      label:
-        istio: eastwestgateway-egress
-        app: istio-eastwestgateway-egress
-        topology.istio.io/network: {{ $.Values.localCluster }}-network
-      enabled: true
-      k8s:
-        env:
-        - name: ISTIO_META_REQUESTED_NETWORK_VIEW
-          value: {{ $.Values.remoteCluster }}-network
-        service:
-          ports:
-          - name: status-port
-            port: 15021
-            targetPort: 15021
-          - name: tls
-            port: 15443
-            targetPort: 15443
-          - name: tls-istiod
-            port: 15012
-            targetPort: 15012
-          - name: tls-webhook
-            port: 15017
-            targetPort: 15017
-    {{- end }}
+    pilot:
+      env:
+        PILOT_ENABLE_ALPHA_GATEWAY_API: "true"

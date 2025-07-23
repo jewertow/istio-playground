@@ -120,7 +120,6 @@ spec:
   workloadSelector:
     labels:
       app: httpbin
-      topology.istio.io/cluster: east-cluster
 EOF
 ```
 ```shell
@@ -142,7 +141,6 @@ spec:
   workloadSelector:
     labels:
       app: httpbin
-      topology.istio.io/cluster: west-cluster
 EOF
 ```
 

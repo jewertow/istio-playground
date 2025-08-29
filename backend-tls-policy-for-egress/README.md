@@ -197,4 +197,4 @@
    ```
 
 > [!NOTE]
-> Notice that now the request is being sent to the port 80 to match proper ServiceEntry.
+> Now the request was sent to the port 80 to match proper listener created by the ServiceEntry.

@@ -72,25 +72,25 @@
 
 1. Generate an EndpointSlice for the google-headless Service:
 
-```shell
-IPS=$(dig +short A www.google.com | sort -u)
+   ```shell
+   IPS=$(dig +short A www.google.com | sort -u)
 
-{
-cat <<EOF
-apiVersion: discovery.k8s.io/v1
-kind: EndpointSlice
-metadata:
-  name: google-headless
-  labels:
-    kubernetes.io/service-name: google-headless
-addressType: IPv4
-endpoints:
-- addresses:
-EOF
+   {
+   cat <<EOF
+   apiVersion: discovery.k8s.io/v1
+   kind: EndpointSlice
+   metadata:
+     name: google-headless
+     labels:
+       kubernetes.io/service-name: google-headless
+   addressType: IPv4
+   endpoints:
+   - addresses:
+   EOF
 
-for ip in $IPS; do
-  echo "  - \"$ip\""
-done
+   for ip in $IPS; do
+     echo "  - \"$ip\""
+   done
 
    cat <<EOF
    ports:

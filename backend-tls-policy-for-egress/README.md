@@ -93,7 +93,8 @@
      name: google-tls
    spec:
      targetRefs:
-     - kind: Service
+     - group: ""
+       kind: Service
        name: google-headless
      validation:
        hostname: www.google.com

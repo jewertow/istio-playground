@@ -48,16 +48,13 @@
      hosts:
      - www.google.com
      ports:
-     - number: 443
-       name: https
+     - number: 80
+       name: http
        protocol: HTTP
+       targetPort: 443
      resolution: DNS
    EOF
    ```
-
-> [!NOTE]
-> Port 443 has protocol HTTP to enable matching the HTTP request
-> and originating TLS to the requested hostname by the istio-proxy.
 
 1. Enable TLS origination:
 
@@ -72,7 +69,7 @@
      - group: networking.istio.io
        kind: ServiceEntry
        name: google
-       sectionName: https
+       sectionName: http
      validation:
        hostname: www.google.com
        wellKnownCACertificates: System
@@ -87,7 +84,7 @@
 
 ## Simple TLS orgination by the egress gateway
 
-1. Update the ServiceEntry:
+1. Update the ServiceEntry and BackendTLSPolicy:
 
    ```shell
    kubectl apply -f - <<EOF
@@ -106,6 +103,20 @@
        name: https
        protocol: HTTPS
      resolution: DNS
+   ---
+   apiVersion: gateway.networking.k8s.io/v1alpha3
+   kind: BackendTLSPolicy
+   metadata:
+     name: google-tls
+   spec:
+     targetRefs:
+     - group: networking.istio.io
+       kind: ServiceEntry
+       name: google
+       sectionName: https
+     validation:
+       hostname: www.google.com
+       wellKnownCACertificates: System
    EOF
    ```
 

@@ -188,5 +188,3 @@
    kubectl exec deploy/curl -c curl -- curl -v -o /dev/null -D - http://www.google.com
    ```
 
-> [!NOTE]
-> Now the request was sent to the port 80 to match proper listener created by the ServiceEntry.

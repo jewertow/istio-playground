@@ -11,7 +11,7 @@
 1. Install Gateway API CRDs:
 
    ```shell
-   kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/experimental-install.yaml
+   kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0-rc.2/standard-install.yaml
    ```
 
 1. Install Istio control plane:
@@ -20,7 +20,6 @@
    istioctl install -y \
       --set profile=minimal \
       --set meshConfig.accessLogFile=/dev/stdout \
-      --set values.pilot.env.PILOT_ENABLE_ALPHA_GATEWAY_API=true \
       --set values.pilot.image=quay.io/jewertow/pilot:backend-tls-policy-service-entry
    ```
 
@@ -31,10 +30,6 @@
    ```
 
 ## Simple TLS origination by sidecar proxy
-
-> [!IMPORTANT]
-> `BackendTLSPolicy` cannot reference `ServiceEntry` resources in `targetRefs`, so we create a headless service to represent the external service within the cluster.
-> `ExternalName` services are also unsuitable, as Istio does not support applying `UpstreamTlsContext` to that service type.
 
 1. Create a ServiceEntry:
 
@@ -60,7 +55,7 @@
 
    ```shell
    kubectl apply -f - <<EOF
-   apiVersion: gateway.networking.k8s.io/v1alpha3
+   apiVersion: gateway.networking.k8s.io/v1
    kind: BackendTLSPolicy
    metadata:
      name: google-tls
@@ -79,7 +74,7 @@
 1. Verify that policy was applied as expected:
 
    ```shell
-   kubectl exec deploy/curl -c curl -- curl -v -o /dev/null -D - http://www.google.com:443
+   kubectl exec deploy/curl -c curl -- curl -v -o /dev/null -D - http://www.google.com
    ```
 
 ## Simple TLS orgination by the egress gateway
@@ -104,7 +99,7 @@
        protocol: HTTPS
      resolution: DNS
    ---
-   apiVersion: gateway.networking.k8s.io/v1alpha3
+   apiVersion: gateway.networking.k8s.io/v1
    kind: BackendTLSPolicy
    metadata:
      name: google-tls

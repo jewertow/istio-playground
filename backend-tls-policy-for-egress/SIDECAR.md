@@ -2,6 +2,12 @@
 
 ## Environment Setup
 
+1. Install Istio 1.28:
+
+   ```shell
+   curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.28.0 TARGET_ARCH=x86_64 sh -
+   ```
+
 1. Create a Kubernetes cluster with Kind:
 
    ```shell
@@ -11,7 +17,7 @@
 1. Install Gateway API CRDs:
 
    ```shell
-   kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0-rc.2/standard-install.yaml
+   kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml
    ```
 
 1. Install Istio control plane:
@@ -19,11 +25,11 @@
    ```shell
    istioctl install -y \
       --set profile=minimal \
-      --set meshConfig.accessLogFile=/dev/stdout \
-      --set values.pilot.image=quay.io/jewertow/pilot:backend-tls-policy-service-entry
+      --set meshConfig.accessLogFile=/dev/stdout
    ```
 
 1. Deploy a client:
+
    ```shell
    kubectl label namespace default istio-injection=enabled
    kubectl apply -f https://raw.githubusercontent.com/istio/istio/refs/heads/master/samples/curl/curl.yaml

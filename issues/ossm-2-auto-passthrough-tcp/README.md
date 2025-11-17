@@ -40,7 +40,6 @@
         --from-file=ca-cert.pem=kind/ca-cert.pem \
         --from-file=ca-key.pem=kind/ca-key.pem \
         --from-file=cert-chain.pem=kind/cert-chain.pem
-    kubectl apply -f kind/istio.yaml
     ```
     
     ```shell
@@ -51,7 +50,6 @@
         --from-file=ca-cert.pem=ocp/ca-cert.pem \
         --from-file=ca-key.pem=ocp/ca-key.pem \
         --from-file=cert-chain.pem=ocp/cert-chain.pem
-    kubectl apply -f ocp/istio.yaml
     ```
 
 ### Test Service Mesh 2.5 (Istio 1.18)

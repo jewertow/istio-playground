@@ -1,4 +1,4 @@
-## Mesh federation with ArgoCD
+## OSSM 2 - auto-passthrough tests
 
 ### Prerequisites
 

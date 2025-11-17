@@ -75,8 +75,9 @@
        ingress:
          service:
            type: LoadBalancer
-           annotations:
-             service.beta.kubernetes.io/aws-load-balancer-type: nlb
+           metadata:
+             annotations:
+               service.beta.kubernetes.io/aws-load-balancer-type: nlb
        egress:
          enabled: false
        openshiftRoute:

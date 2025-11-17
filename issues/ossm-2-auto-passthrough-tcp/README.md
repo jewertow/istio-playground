@@ -86,14 +86,6 @@
      tracing:
        type: None
      version: v2.5
-   ---
-   apiVersion: maistra.io/v1
-   kind: ServiceMeshMemberRoll
-   metadata:
-     name: default
-   spec:
-     members:
-     - server
    EOF
    ```
 

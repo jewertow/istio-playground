@@ -54,6 +54,8 @@
     kubectl apply -f ocp/istio.yaml
     ```
 
+### Test Service Mesh 2.5 (Istio 1.18)
+
 1. Install Service Mesh in OCP:
 
    ```shell
@@ -100,7 +102,10 @@
 1. Install Istio in KIND:
 
    ```shell
-   istioctl install -y -f - <<EOF
+   curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.18.7 TARGET_ARCH=x86_64 sh -
+   ```
+   ```shell
+   ./istio-1.18.7/bin/istioctl install -y -f - <<EOF
    apiVersion: install.istio.io/v1alpha1
    kind: IstioOperator
    spec:

@@ -223,3 +223,9 @@
    ```shell
    kubectl exec deploy/curl -n client -c curl -- nc tcp-echo.server.svc.cluster.local 9000
    ```
+
+1. Upgrade SMCP to v2.6 and test connections again:
+
+   ```shell
+   kubectl patch smcp basic -n istio-system --type merge -p '{"spec":{"version":"v2.6"}}'
+   ```

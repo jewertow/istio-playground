@@ -100,8 +100,10 @@
    ```shell
    kubectl create namespace server
    kubectl label ns server istio-injection=enabled
-   kubectl apply -n server -f https://raw.githubusercontent.com/maistra/istio/maistra-2.5/samples/httpbin/httpbin.yaml
+   kubectl apply -n server -f https://raw.githubusercontent.com/istio/istio/master/samples/httpbin/httpbin.yaml
    kubectl patch deploy httpbin -n server -p '{"spec":{"template":{"metadata":{"labels":{"sidecar.istio.io/inject":"true"}}}}}'
+   kubectl apply -n server -f https://raw.githubusercontent.com/maistra/istio/maistra-2.5/samples/tcp-echo/tcp-echo.yaml
+   kubectl patch deploy tcp-echo -n server -p '{"spec":{"template":{"metadata":{"labels":{"sidecar.istio.io/inject":"true"}}}}}'
    ```
 
 1. Install Istio in KIND:
@@ -148,6 +150,7 @@
          protocol: TLS
        hosts:
        - "httpbin.server.svc.cluster.local"
+       - "tcp-echo.server.svc.cluster.local"
        tls:
          mode: AUTO_PASSTHROUGH
    EOF
@@ -162,12 +165,11 @@
    ```shell
    # KIND
    OCP_INGRESS_ADDR=
-   kubectl apply -f - <<EOF
+   kubectl apply -n istio-system -f - <<EOF
    apiVersion: networking.istio.io/v1beta1
    kind: ServiceEntry
    metadata:
      name: httpbin
-     namespace: istio-system
    spec:
      hosts:
      - httpbin.server.svc.cluster.local
@@ -183,11 +185,41 @@
        labels:
          security.istio.io/tlsMode: istio
      resolution: DNS
+   ---
+   apiVersion: networking.istio.io/v1beta1
+   kind: ServiceEntry
+   metadata:
+     name: tcp-echo
+   spec:
+     hosts:
+     - tcp-echo.server.svc.cluster.local
+     location: MESH_INTERNAL
+     ports:
+     - number: 9000
+       name: tcp
+       protocol: TCP
+     endpoints:
+     - address: "$OCP_INGRESS_ADDR"
+       ports:
+         tcp: 443
+       labels:
+         security.istio.io/tlsMode: istio
+     resolution: DNS
    EOF
    ```
 
-1. Send a test request from KIND:
+> [!NOTE]
+> Since ISTIO_META_DNS_AUTO_ALLOCATE is enabled we can ignore the warning:
+> Warning: addresses are required for ports serving TCP (or unset) protocol
+
+1. Send a test request from KIND to httpbin in OCP:
 
    ```shell
    kubectl exec deploy/curl -n client -c curl -- curl -v http://httpbin.server.svc.cluster.local:8000/headers
+   ```
+
+1. Send a test request from KIND to tcp-echo in OCP:
+
+   ```shell
+   kubectl exec deploy/curl -n client -c curl -- nc tcp-echo.server.svc.cluster.local 9000
    ```

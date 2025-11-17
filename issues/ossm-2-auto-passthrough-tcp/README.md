@@ -131,29 +131,63 @@
 
 1. Expose httpbin from OCP cluster:
 
-```shell
-kubectl apply -f - <<EOF
-apiVersion: networking.istio.io/v1beta1
-kind: Gateway
-metadata:
-  name: auto-passthrough
-  namespace: istio-system
-spec:
-  selector:
-    app: istio-ingressgateway
-  servers:
-  - port:
-      number: 443
-      name: tls
-      protocol: TLS
-    hosts:
-    - "httpbin.server.svc.cluster.local"
-    tls:
-      mode: AUTO_PASSTHROUGH
-EOF
-```
+   ```shell
+   kubectl apply -f - <<EOF
+   apiVersion: networking.istio.io/v1beta1
+   kind: Gateway
+   metadata:
+     name: auto-passthrough
+     namespace: istio-system
+   spec:
+     selector:
+       app: istio-ingressgateway
+     servers:
+     - port:
+         number: 443
+         name: tls
+         protocol: TLS
+       hosts:
+       - "httpbin.server.svc.cluster.local"
+       tls:
+         mode: AUTO_PASSTHROUGH
+   EOF
+   ```
 
 1. Create ServiceEntry in KIND:
-```shell
 
-```
+   ```shell
+   # OCP
+   OCP_INGRESS_ADDR=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+   ```
+   ```shell
+   # KIND
+   OCP_INGRESS_ADDR=
+   kubectl apply -f - <<EOF
+   apiVersion: networking.istio.io/v1beta1
+   kind: ServiceEntry
+   metadata:
+     name: httpbin
+     namespace: istio-system
+   spec:
+     hosts:
+     - httpbin.server.svc.cluster.local
+     location: MESH_INTERNAL
+     ports:
+     - number: 8000
+       name: http
+       protocol: HTTP
+     endpoints:
+     - address: "$OCP_INGRESS_ADDR"
+       ports:
+         http: 443
+       labels:
+         security.istio.io/tlsMode: istio
+     resolution: DNS
+   EOF
+   ```
+
+1. Send a test request from KIND:
+
+   ```shell
+   kubectl exec deploy/curl -n client -c curl -- curl -v http://httpbin.server.svc.cluster.local:8000/headers
+   ```

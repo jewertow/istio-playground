@@ -57,7 +57,6 @@
 1. Install Service Mesh in OCP:
 
    ```shell
-   kubectl create namespace server
    kubectl apply -n istio-system -f - <<EOF
    apiVersion: maistra.io/v2
    kind: ServiceMeshControlPlane
@@ -73,7 +72,14 @@
        grafana:
          enabled: false
      gateways:
+       ingress:
+         service:
+           type: LoadBalancer
+           annotations:
+             service.beta.kubernetes.io/aws-load-balancer-type: nlb
        egress:
+         enabled: false
+       openshiftRoute:
          enabled: false
      general:
        logging:
@@ -83,10 +89,18 @@
        accessLogging:
          file:
            name: /dev/stdout
+     security:
+       manageNetworkPolicy: false
      tracing:
        type: None
      version: v2.5
    EOF
+   ```
+   ```shell
+   kubectl create namespace server
+   kubectl label ns server istio-injection=enabled
+   kubectl apply -n server -f https://raw.githubusercontent.com/maistra/istio/maistra-2.5/samples/httpbin/httpbin.yaml
+   kubectl patch deploy httpbin -n server -p '{"spec":{"template":{"metadata":{"labels":{"sidecar.istio.io/inject":"true"}}}}}'
    ```
 
 1. Install Istio in KIND:
@@ -111,4 +125,34 @@
    ```shell
    kubectl create namespace client
    kubectl label ns client istio-injection=enabled
+   kubectl apply -n client -f https://raw.githubusercontent.com/istio/istio/master/samples/curl/curl.yaml
    ```
+
+1. Expose httpbin from OCP cluster:
+
+```shell
+kubectl apply -f - <<EOF
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: auto-passthrough
+  namespace: istio-system
+spec:
+  selector:
+    app: istio-ingressgateway
+  servers:
+  - port:
+      number: 443
+      name: tls
+      protocol: TLS
+    hosts:
+    - "httpbin.server.svc.cluster.local"
+    tls:
+      mode: AUTO_PASSTHROUGH
+EOF
+```
+
+1. Create ServiceEntry in KIND:
+```shell
+
+```
